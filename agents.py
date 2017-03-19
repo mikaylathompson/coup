@@ -25,11 +25,17 @@ class BaseAgent:
 class RandomAgent(BaseAgent):
     # Returns a random eligible action.
     def selectAction(self, playerView):
+
+        print("playerView.selfstate: ", playerView.selfstate)
         action_list = coup.find_eligible_actions(playerView.selfstate)
+
         print("Considered actions: ", action_list)
         action = random.sample(action_list, 1)[0]
-        if action in [coup.Action.STEAL, coup.Action.ASSASSINATE, coup.Action.COUP]:
-            target = random.randint(0, (len(playerView.opponents)) -1)
+        print("Selected action: ", action)
+        if action in [coup.Action.ASSASSINATE, coup.Action.COUP]:
+            target = random.randint(1, (len(playerView.opponents)))
+        elif action == coup.Action.STEAL: 
+            target = random.choice([i+1 for i, opp in enumerate(playerView.opponents) if opp.coins >= 2])
         else:
             target = None
         return (action, target)

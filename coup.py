@@ -62,13 +62,19 @@ PlayerView = namedtuple('PlayerView', ['selfstate', 'opponents'])
 
 def find_eligible_actions(playerState):
     if playerState.coins >= 10:
-        return set(Action.COUP)
+        print(">10 coins means must coup")
+        return set([Action.COUP])
+    print("I claim I don't have 10 coins, I have:", playerState.coins)
     try:
-        return set([act for card in playerState.cards for act in available_actions[card]
+        cards = playerState.cards
+        print(cards)
+        return set([act for card in cards for act in available_actions[card]
                     if (isinstance(act, Action) and action_expense[act] <= playerState.coins)])
     except KeyError:
         # Who knows why I have to do this???
-        return set([act for card in playerState.cards for act in available_actions[Role[card.name]]
+        cards = list(map(lambda x: Role[x.name], playerState.cards))
+        print(cards)
+        return set([act for card in cards for act in available_actions[card]
                     if (isinstance(act, Action) and action_expense[act] <= playerState.coins)])
 
 
@@ -146,10 +152,11 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         if reaction != Reaction.BLOCK_ASSASINATION:
             # Assasination will go forward. Target now gets to select card.
             killedCard = target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer))
-            newCards = list(set(target.cards) - set(killedCard))
+            newCards = list(set(target.cards) - set([killedCard]))
             if len(newCards) == 0:
                 # target has been knocked out of game. Do not re-add them to gameState
                 playerList[activePlayer] = player
+                playerList.pop(targetPlayer)
             else:
                 # target is still in game.
                 playerList[activePlayer] = player
@@ -161,18 +168,20 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         return gameState._replace(players=playerList)
     
     elif action == Action.COUP:
-        target = playerList[target]
+        target = playerList[targetPlayer]
         # Player must pay for assassination
         player = player._replace(coins = player.coins - 7)
         killedCard = target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer))
-        newCards = list(set(target.cards) - set(killedCard))
+        newCards = list(set(target.cards) - set([killedCard]))
         if len(newCards) == 0:
+            print("Target should be knocked out.")
             # target has been knocked out of game. Do not re-add them to gameState
             playerList[activePlayer] = player
+            playerList.pop(targetPlayer)
         else:
             # target is still in game.
             playerList[activePlayer] = player
-            playerList[targetPlayer] = target
+            playerList[targetPlayer] = target._replace(cards=newCards)
         return gameState._replace(players=playerList)
 
 
@@ -219,7 +228,12 @@ if __name__ == "__main__":
     while human.strip() is not '' and len(gameState.players) > 1:
         i = i % len(gameState.players)
         player = gameState.players[i].agent
-        action, target = player.selectAction(getPlayerView(initalState, i))
+        action, relativeTarget = player.selectAction(getPlayerView(gameState, i))
+        if relativeTarget is not None:
+            target = (i + relativeTarget) % len(gameState.players)
+            print(f"Relative target was {relativeTarget}. I calculate target={target}")
+        else:
+            target = None
         print(f"Action by player {i}:", action)
         gameState = apply_action(gameState, i, action, target)
         printState(gameState)
