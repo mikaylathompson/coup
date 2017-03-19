@@ -46,7 +46,7 @@ action_expense = {
 
 # PlayerState is the description of a particular player's state at a given time.
 # Cards is a list of roles, coins is an integer number of coins.
-PlayerState = namedtuple('PlayerState', ['cards', 'coins'])
+PlayerState = namedtuple('PlayerState', ['cards', 'coins', 'agent'])
 
 # GameState is the state of an entire game.
 # Players is a list of PlayerStates for all active players (dead players are dropped)
@@ -67,10 +67,12 @@ def find_eligible_actions(playerState):
                     if (isinstance(act, Action) and action_expense[act] <= playerState.coins)])
 
 
+
 def getPlayerView(gameState, activePlayer):
     return PlayerView(selfstate=gameState.players[activePlayer],
-            opponents= list(map(lambda x: x._replace(cards=len(x.cards)),
+            opponents= list(map(lambda x: x._replace(cards=len(x.cards), agent=None),
                     gameState.players[activePlayer+1:] + gameState.players[:activePlayer])))
+
 
 # Return the new gameState after a player takes an action
 def apply_action(gameState, activePlayer, action, targetPlayer=None):
@@ -106,16 +108,16 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
 
 
 if __name__ == "__main__":
-    assert find_eligible_actions(PlayerState(cards=[Role.DUKE], coins=0)) == \
+    assert find_eligible_actions(PlayerState(cards=[Role.DUKE], coins=0, agent=None)) == \
             {Action.INCOME, Action.FOREIGN_AID, Action.DUKE_MONEY}
 
-    assert find_eligible_actions(PlayerState(cards=[Role.CAPTAIN], coins=0)) ==\
+    assert find_eligible_actions(PlayerState(cards=[Role.CAPTAIN], coins=0, agent=None)) ==\
             {Action.INCOME, Action.FOREIGN_AID, Action.STEAL}
 
-    assert find_eligible_actions(PlayerState(cards=[Role.CONTESSA, Role.DUKE], coins=0)) ==\
+    assert find_eligible_actions(PlayerState(cards=[Role.CONTESSA, Role.DUKE], coins=0, agent=None)) ==\
             {Action.INCOME, Action.FOREIGN_AID, Action.DUKE_MONEY}
 
-    assert find_eligible_actions(PlayerState(cards=[Role.ASSASSIN], coins=8)) ==\
+    assert find_eligible_actions(PlayerState(cards=[Role.ASSASSIN], coins=8, agent=None)) ==\
             {Action.INCOME, Action.FOREIGN_AID, Action.ASSASSINATE, Action.COUP}
 
 
