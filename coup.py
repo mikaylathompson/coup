@@ -44,15 +44,6 @@ action_expense = {
         Action.COUP: 7
 }
 
-
-def find_eligible_actions(playerState):
-    if playerState.coins >= 10:
-        return set(Action.COUP)
-
-    return set([act for card in playerState.cards for act in available_actions[card]
-                    if (isinstance(act, Action) and action_expense[act] <= playerState.coins)])
-
-
 # PlayerState is the description of a particular player's state at a given time.
 # Cards is a list of roles, coins is an integer number of coins.
 PlayerState = namedtuple('PlayerState', ['cards', 'coins'])
@@ -62,11 +53,19 @@ PlayerState = namedtuple('PlayerState', ['cards', 'coins'])
 # Deck is the shuffled list of roles remaining in the deck.
 GameState = namedtuple('GameState', ['players', 'deck'])
 
-
 # PlayerView is a the view of a game from a single players perspective.
 # Selfstate is the PlayerState of the active player.
 # Oppenent is a list of PlayerStates of the other players, but cards is an int, not a list.
 PlayerView = namedtuple('PlayerView', ['selfstate', 'opponents'])
+
+
+def find_eligible_actions(playerState):
+    if playerState.coins >= 10:
+        return set(Action.COUP)
+
+    return set([act for card in playerState.cards for act in available_actions[card]
+                    if (isinstance(act, Action) and action_expense[act] <= playerState.coins)])
+
 
 def getPlayerView(gameState, activePlayer):
     return PlayerView(selfstate=gameState.players[activePlayer],
