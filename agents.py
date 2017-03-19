@@ -5,7 +5,7 @@ import random
 # Base Agent.
 # Custom AIs inherent from this and implement methods.
 class BaseAgent:
-    def __init__(self, playerView):
+    def __init__(self):
         pass
 
     def selectAction(self, playerView):
@@ -25,21 +25,28 @@ class BaseAgent:
 class RandomAgent(BaseAgent):
     # Returns a random eligible action.
     def selectAction(self, playerView):
-        return random.choice(coup.find_eligible_actions(playerView.selfstate))
+        action_list = coup.find_eligible_actions(playerView.selfstate)
+        print("Considered actions: ", action_list)
+        action = random.sample(action_list, 1)[0]
+        if action in [coup.Action.STEAL, coup.Action.ASSASSINATE, coup.Action.COUP]:
+            target = random.randint(0, (len(playerView.opponents)) -1)
+        else:
+            target = None
+        return (action, target)
 
     # Returns a blocking reaction if possible.
     def selectReaction(self, playerView, actionInfo):
-        reactions = set([act for card in playerState.cards for act in available_actions[card]
-                        if isinstance(act, Reaction)])
-        if actionInfo[0] == Action.STEAL:
+        reactions = set([act for card in playerView.selfstate.cards for act in coup.available_actions[coup.Role[card.name]]
+                        if isinstance(act, coup.Reaction)])
+        if actionInfo[0] == coup.Action.STEAL:
             if Reaction.BLOCK_STEAL in reactions:
                 return Reaction.BLOCK_STEAL
             return None
-        elif actionInfo[0] == Action.ASSASSINATE:
+        elif actionInfo[0] == coup.Action.ASSASSINATE:
             if Reaction.BLOCK_ASSASINATION in reactions:
                 return Reaction.BLOCK_ASSASINATION
             return None
-        elif actionInfo[0] == Action.FOREIGN_AID:
+        elif actionInfo[0] == coup.Action.FOREIGN_AID:
             if Reaction.BLOCK_FOREIGN_AID in reactions:
                 return Reaction.BLOCK_FOREIGN_AID
             return None
