@@ -46,7 +46,10 @@ action_expense = {
 
 
 def find_eligible_actions(playerState):
-    return set([act for card in playerState.cards for act in available_actions[card] if (isinstance(act, Action) and action_expense[act] <= playerState.coins)])
+    if playerState.coins >= 10:
+        return set(Action.COUP)
+    return set([act for card in playerState.cards for act in available_actions[card]
+                    if (isinstance(act, Action) and action_expense[act] <= playerState.coins)])
 
 
 # PlayerState is the description of a particular player's state at a given time.
@@ -59,6 +62,37 @@ PlayerState = namedtuple('PlayerState', ['cards', 'coins'])
 GameState = namedtuple('GameState', ['players', 'deck'])
 
 
+# Return the new gameState after a player takes an action
+def apply_action(gameState, activePlayer, action, targetPlayer=None):
+    playerList = gameState.players
+    player = playerList.pop(activePlayer)
+    assert action in find_eligible_actions(player)
+
+    if action == Action.INCOME:
+        player = player._replace(coins = player.coins + 1)
+        playerList.insert(activePlayer, player)
+        return gameState._replace(players=playerList)
+
+    elif action == Action.FOREIGN_AID:
+        # Opportunity to block goes here.
+        player = player._replace(coins = player.coins + 2)
+        playerList.insert(activePlayer, player)
+        return gameState._replace(players=playerList)
+
+    elif action == Action.DUKE_MONEY:
+        player = player._replace(coins = player.coins + 3)
+        playerList.insert(activePlayer, player)
+        return gameState._replace(players=playerList)
+
+    elif action == Action.STEAL:
+        # opportunity to block goes here
+        target = playerList.pop(targetPlayer + (0 if targetPlayer < activePlayer else 1))
+        player = player._replace(coins = player.coins + 2)
+        target = target._replace(coins = target.coins- 2)
+        playerList.insert(activePlayer - (0 if activePlayer > targetPlayer else 1), player)
+        playerList.insert(targetPlayer, target)
+        return gameState._replace(players=playerList)
+
 
 
 if __name__ == "__main__":
@@ -67,4 +101,10 @@ if __name__ == "__main__":
 
     assert find_eligible_actions(PlayerState(cards=[Role.CAPTAIN], coins=0)) ==\
             {Action.INCOME, Action.FOREIGN_AID, Action.STEAL}
+
+    assert find_eligible_actions(PlayerState(cards=[Role.CONTESSA, Role.DUKE], coins=0)) ==\
+            {Action.INCOME, Action.FOREIGN_AID, Action.DUKE_MONEY}
+
+    assert find_eligible_actions(PlayerState(cards=[Role.ASSASSIN], coins=8)) ==\
+            {Action.INCOME, Action.FOREIGN_AID, Action.ASSASSINATE, Action.COUP}
 
