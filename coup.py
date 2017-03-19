@@ -67,7 +67,6 @@ def find_eligible_actions(playerState):
                     if (isinstance(act, Action) and action_expense[act] <= playerState.coins)])
 
 
-
 def getPlayerView(gameState, activePlayer):
     return PlayerView(selfstate=gameState.players[activePlayer],
             opponents= list(map(lambda x: x._replace(cards=len(x.cards), agent=None),
@@ -86,8 +85,13 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         return gameState._replace(players=playerList)
 
     elif action == Action.FOREIGN_AID:
-        # Opportunity to block goes here.
-        player = player._replace(coins = player.coins + 2)
+        # All opponents get the opportunity to block
+        reactions = [opp.agent.selectReaction(getPlayerView(gameState, i),
+                                              (Action.FOREIGN_AID, activePlayer))
+                                            for opp in playerList]
+        if Reactions.BLOCK_FOREIGN_AID not in reactions:
+            player = player._replace(coins = player.coins + 2)
+
         playerList.insert(activePlayer, player)
         return gameState._replace(players=playerList)
 
@@ -97,12 +101,68 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         return gameState._replace(players=playerList)
 
     elif action == Action.STEAL:
-        # opportunity to block goes here
         target = playerList.pop(targetPlayer + (0 if targetPlayer < activePlayer else 1))
-        player = player._replace(coins = player.coins + 2)
-        target = target._replace(coins = target.coins- 2)
+
+        # Target gets the opportunity to block:
+        reaction = target.agent.selectReaction(getPlayerView(gameState, targetPlayer),
+                                    (Action.STEAL, activePlayer)) #should adjust for relative position
+        if reaction != Reaction.BLOCK_STEAL:
+            player = player._replace(coins = player.coins + 2)
+            target = target._replace(coins = target.coins- 2)
         playerList.insert(activePlayer - (0 if activePlayer > targetPlayer else 1), player)
         playerList.insert(targetPlayer, target)
+        return gameState._replace(players=playerList)
+
+    elif action == Action.EXCHANGE:
+        import random
+        # Select two cards from deck.
+        deck = random.sample(gameState.deck, len(gameState.deck))
+        # Offer agent these two + their current cards.
+        offers = [deck.pop(), deck.pop()] + player.cards
+        selected = player.agent.selectExchangeCards(offers)
+        # Set hand to selected cards, and return remaining to deck.
+        playerList.insert(activePlayer, player._replace(cards=selected))
+        for c in selected:
+            offers.remove(c)
+        return gameState._replace(players=playerList, deck=deck + offers)
+
+    elif action == Action.ASSASSINATE:
+        target = playerList.pop(targetPlayer + (0 if targetPlayer < activePlayer else 1))
+        # Player must pay for assassination
+        player = player._replace(coins = player.coins - 3)
+        # Target gets the opportunity to block:
+        reaction = target.agent.selectReaction(getPlayerView(gameState, targetPlayer),
+                                    (Action.STEAL, activePlayer)) #should adjust for relative position
+        if reaction != Reaction.BLOCK_ASSASINATION:
+            # Assasination will go forward. Target now gets to select card.
+            killedCard = target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer))
+            newCards = list(set(target.cards) - set(killedCard))
+            if len(newCards) == 0:
+                # target has been knocked out of game. Do not re-add them to gameState
+                playerList.insert(activePlayer - (0 if activePlayer > targetPlayer else 1), player)
+            else:
+                # target is still in game.
+                playerList.insert(activePlayer - (0 if activePlayer > targetPlayer else 1), player)
+                playerList.insert(targetPlayer, target._replace(cards=newCards))
+        else:
+            # Assasination was blocked, just re-add players
+            playerList.insert(activePlayer - (0 if activePlayer > targetPlayer else 1), player)
+            playerList.insert(targetPlayer, target)
+        return gameState._replace(players=playerList)
+
+    elif action == Action.COUP:
+        target = playerList.pop(targetPlayer + (0 if targetPlayer < activePlayer else 1))
+        # Player must pay for assassination
+        player = player._replace(coins = player.coins - 7)
+        killedCard = target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer))
+        newCards = list(set(target.cards) - set(killedCard))
+        if len(newCards) == 0:
+            # target has been knocked out of game. Do not re-add them to gameState
+            playerList.insert(activePlayer - (0 if activePlayer > targetPlayer else 1), player)
+        else:
+            # target is still in game.
+            playerList.insert(activePlayer - (0 if activePlayer > targetPlayer else 1), player)
+            playerList.insert(targetPlayer, target._replace(cards=newCards))
         return gameState._replace(players=playerList)
 
 
