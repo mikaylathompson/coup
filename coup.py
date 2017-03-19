@@ -64,7 +64,7 @@ GameState = namedtuple('GameState', ['players', 'deck'])
 
 # Return the new gameState after a player takes an action
 def apply_action(gameState, activePlayer, action, targetPlayer=None):
-    playerList = gameState.players
+    playerList = gameState.players[:]
     player = playerList.pop(activePlayer)
     assert action in find_eligible_actions(player)
 
@@ -107,4 +107,11 @@ if __name__ == "__main__":
 
     assert find_eligible_actions(PlayerState(cards=[Role.ASSASSIN], coins=8)) ==\
             {Action.INCOME, Action.FOREIGN_AID, Action.ASSASSINATE, Action.COUP}
+
+
+    p1 = PlayerState(cards=[Role.CONTESSA], coins=0)
+    p2 = PlayerState(cards=[Role.DUKE], coins=0)
+    gameState = GameState(players=[p1, p2], deck=[])
+    print(apply_action(gameState, 0, Action.INCOME))
+    print(apply_action(gameState, 1, Action.DUKE_MONEY))
 
