@@ -202,7 +202,6 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
 
 # Set up an initial gameState for the list of agents.
 def dealGame(deck, agents):
-    from agents import RandomAgent, MrtBot
     random.shuffle(deck)
     return GameState(players=[PlayerState(coins=2, cards=deck[i*2:i*2+2], agent=a, name=f"{type(a)}-{i}") for i, a in enumerate(agents)],
                     deck=deck[len(agents)+2:])
@@ -215,7 +214,7 @@ def printState(gameState):
     print()
 
 
-def randomGameLoop(agents):
+def randomGameLoop(agents, humanInput=False):
     baseDeck = [Role.DUKE, Role.ASSASSIN, Role.CONTESSA, Role.AMBASSADOR, Role.CAPTAIN] * 3
 
     initalState = dealGame(baseDeck, agents)
@@ -233,44 +232,29 @@ def randomGameLoop(agents):
         print(f"Action: {action} directed at target {target} by Player {gameState.players[i].name}")
         gameState = apply_action(gameState, i, action, target)
         turns += 1
-        x = input().strip()
-        if x == 'q':
-            return
+        if humanInput:
+            x = input().strip()
+            if x == 'q':
+                return
     winner_name = gameState.players[0].name
     print("WINNER: ", winner_name)
+    return(winner_name)
 
 
 if __name__ == "__main__":
-    from agents import RandomAgent, MrtBot
+    from agents import RandomAgent#, MrtBot
     from statistics import mean
     from collections import Counter
 
+    agentList = [RandomAgent()] * 4# + [MrtBot()]
+    # for i in range(5):
+    #     randomGameLoop(agentList, humanInput=True)
 
-    randomGameLoop([RandomAgent()] * 2 + [MrtBot()])
-
-    # winners = []
-    # for i in range(1000):
-    #     _, winningHand = randomGameLoop([RandomAgent()] * 3)
-    #     winners.append(frozenset(winningHand))
-
-    # for i in range(1000):
-    #     _, winningHand = randomGameLoop([RandomAgent()] * 4)
-    #     winners.append(frozenset(winningHand))
-
-    # for i in range(1000):
-    #     _, winningHand = randomGameLoop([RandomAgent()] * 5)
-    #     winners.append(frozenset(winningHand))
-
-    # c = Counter(winners)
-
-    # for hand, count in c.most_common(5):
-    #     print(count, '\t', hand)
-
-    # print()
-    # allCounts = c.most_common(len(c.keys()))
-    # for hand, count in allCounts[::-1][:10]:
-    #     print(count, '\t', hand)
-    # print(len(allCounts))
+    agentList = [RandomAgent()] * 4# + [MrtBot()]
+    winners = [randomGameLoop(agentList) for _ in range(1000)]
+    c = Counter(winners)
+    for val, winner in c.most_common(3):
+        print(val, '\t', winner)
 
 
 

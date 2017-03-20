@@ -28,10 +28,10 @@ class RandomAgent(BaseAgent):
         action = random.sample(action_list, 1)[0]
 
         if action in [coup.Action.ASSASSINATE, coup.Action.COUP]:
-            target = random.randint(1, (len(playerView.opponents)))
-        elif action == coup.Action.STEAL:
+            target = random.randint(0, (len(playerView.opponents)) - 1)
+        elif action == coup.Action.STEAL: 
             try:
-                target = random.choice([i+1 for i, opp in enumerate(playerView.opponents) if opp.coins >= 2])
+                target = random.choice([i for i, opp in enumerate(playerView.opponents) if opp.coins >= 2])
             except IndexError:
                 # No opponents, retry
                 return self.selectAction(playerView)
