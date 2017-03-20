@@ -96,18 +96,19 @@ class BayBot(BaseAgent):
         # return first legal action by preference
         action_list = coup.find_eligible_actions(playerView.selfstate)
         action_names = list(map(lambda x: x.name, action_list))
-        action = [i for i in action_preferences if (i in action_names)][0]
+        action = [i for i in self.action_preferences if (i in action_names)][0]
         action = coup.Action[action]
 
         # quit here, if no need to target
         if not action.name in ["ASSASSINATE", "COUP", "STEAL"]:
-            return (action, target)
+            return (action, None)
 
         #otherwise, proceed with targeting
 
         # sort players by strength, mapping to tuples w/ original index
-        opps = enumerate(playerView.opponents)
-        opps.sort(key=lambda x: (x[1].cards*10 + x[1].coins)).reverse()
+        opps = list(enumerate(playerView.opponents))
+        opps.sort(key=lambda x: (x[1].cards*10 + x[1].coins))
+        opps.reverse()
 
         # default is to attack strongest player
         target = opps[0][0]
@@ -136,11 +137,11 @@ class BayBot(BaseAgent):
             return None
 
     def selectExchangeCards(self, playerView, cards):
-        ordered_cards = cards.sort(key=lambda x: card_preferences.index(x))
+        ordered_cards = sorted(cards, key=lambda x: self.card_preferences.index(x.name))
         return ordered_cards[:len(playerView.selfstate.cards)]   
 
     # Returns a random card from hand.
     def selectKilledCard(self, playerView):
-        ordered_cards = playerView.selfstate.cards.sort(key=lambda x: card_preferences.index(x))
+        ordered_cards = sorted(playerView.selfstate.cards, key=lambda x: self.card_preferences.index(x.name))
         return ordered_cards[-1]   
 

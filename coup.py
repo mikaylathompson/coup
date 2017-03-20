@@ -191,7 +191,6 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
 
 # Set up an initial gameState for the list of agents.
 def dealGame(deck, agents):
-    from agents import RandomAgent, MrtBot
     random.shuffle(deck)
     return GameState(players=[PlayerState(coins=2, cards=deck[i*2:i*2+2], agent=a, name=f"{type(a)}-{i}") for i, a in enumerate(agents)],
                     deck=deck[len(agents)+2:])
@@ -230,12 +229,12 @@ def randomGameLoop(agents):
 
 
 if __name__ == "__main__":
-    from agents import RandomAgent, MrtBot
+    from agents import RandomAgent, BayBot
     from statistics import mean
     from collections import Counter
 
 
-    randomGameLoop([RandomAgent()] * 2 + [MrtBot()])
+    randomGameLoop([RandomAgent()] * 2 + [BayBot()])
 
     # winners = []
     # for i in range(1000):
