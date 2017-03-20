@@ -193,7 +193,7 @@ def printState(gameState):
 
 
 def randomGameLoop(agents):
-    baseDeck = [Role.DUKE, Role.ASSASSIN, Role.CONTESSA, Role.AMBASSADOR, Role.CAPTAIN] * 4
+    baseDeck = [Role.DUKE, Role.ASSASSIN, Role.CONTESSA, Role.AMBASSADOR, Role.CAPTAIN] * 3
 
     initalState = dealGame(baseDeck, agents)
     gameState = initalState
