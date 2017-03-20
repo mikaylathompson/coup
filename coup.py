@@ -12,7 +12,7 @@ class Role(Enum):
 class Action(Enum):
     INCOME = auto()
     FOREIGN_AID = auto()
-    DUKE_MONEY = auto()
+    TAX = auto()
     ASSASSINATE = auto()
     STEAL = auto()
     EXCHANGE = auto()
@@ -27,7 +27,7 @@ class Reaction(Enum):
 universal_actions = [Action.INCOME, Action.FOREIGN_AID, Action.COUP]
 
 available_actions = {
-        Role.DUKE: universal_actions + [Action.DUKE_MONEY, Reaction.BLOCK_FOREIGN_AID],
+        Role.DUKE: universal_actions + [Action.TAX, Reaction.BLOCK_FOREIGN_AID],
         Role.ASSASSIN: universal_actions + [Action.ASSASSINATE],
         Role.CONTESSA: universal_actions + [Reaction.BLOCK_ASSASSINATION],
         Role.AMBASSADOR: universal_actions + [Action.EXCHANGE, Reaction.BLOCK_STEAL],
@@ -37,7 +37,7 @@ available_actions = {
 action_expense = {
         Action.INCOME: 0,
         Action.FOREIGN_AID: 0,
-        Action.DUKE_MONEY: 0,
+        Action.TAX: 0,
         Action.ASSASSINATE: 3,
         Action.STEAL: 0,
         Action.EXCHANGE: 0,
@@ -73,8 +73,6 @@ def find_eligible_actions(playerState):
                     if (isinstance(act, Action) and action_expense[act] <= playerState.coins)])
 
 
-
-
 def getPlayerView(gameState, activePlayer):
     return PlayerView(selfstate=gameState.players[activePlayer],
             opponents = list(map(lambda x: x._replace(cards=len(x.cards), agent=None),
@@ -83,7 +81,6 @@ def getPlayerView(gameState, activePlayer):
 
 # Return the new gameState after a player takes an action
 def apply_action(gameState, activePlayer, action, targetPlayer=None):
-
     # WHY DO I HAVE TO DO THIS?!?!
     action = Action[action.name]
 
@@ -106,7 +103,7 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         playerList[activePlayer] = player
         return gameState._replace(players=playerList)
 
-    elif action == Action.DUKE_MONEY:
+    elif action == Action.TAX:
         player = player._replace(coins = player.coins + 3)
         playerList[activePlayer] = player
         return gameState._replace(players=playerList)

@@ -125,8 +125,8 @@ class MrtBot(RandomAgent):
                     return (coup.Action.ASSASSINATE, i)
             return (coup.Action.ASSASSINATE, 0)
 
-        if "DUKE_MONEY" in action_list:
-            return (coup.Action.DUKE_MONEY, None)
+        if "TAX" in action_list:
+            return (coup.Action.TAX, None)
 
         if "EXCHANGE" in action_list:
             return (coup.Action.EXCHANGE, None)
@@ -195,7 +195,7 @@ class BayBot(BaseAgent):
         "ASSASSINATE",
         "COUP",
         "EXCHANGE",
-        "DUKE_MONEY",
+        "TAX",
         "STEAL",
         "INCOME",
         "FOREIGN_AID"
@@ -265,8 +265,8 @@ class SeanAgent(RandomAgent):
         # This is in order of desirability
         # More effort here?
         action = coup.Action.INCOME
-        if coup.Action.DUKE_MONEY in action_list:
-            action = coup.Action.DUKE_MONEY
+        if coup.Action.TAX in action_list:
+            action = coup.Action.TAX
         if coup.Action.STEAL in action_list:
             action = coup.Action.STEAL
         if coup.Action.ASSASSINATE in action_list:
@@ -291,8 +291,8 @@ class SeanAgent(RandomAgent):
                 target = random.choice([i for i, opp in enumerate(playerView.opponents) if opp.coins >= 2])
             except IndexError:
                 action = coup.Action.INCOME
-                if coup.Action.DUKE_MONEY in action_list:
-                    action = coup.Action.DUKE_MONEY
+                if coup.Action.TAX in action_list:
+                    action = coup.Action.TAX
                 target = None
         else:
             target = None
