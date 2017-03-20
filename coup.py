@@ -210,6 +210,7 @@ def applyAction(gameState, activePlayer, action, targetPlayer=None):
         target = playerList[targetPlayer]
         # Player must pay for assassination
         player = player._replace(coins = player.coins - 7)
+        playerList[activePlayer] = player
         target = removeCard(target,
                             target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer)))
         if target:
@@ -225,7 +226,7 @@ def dealGame(deck, agents):
     return GameState(players=[PlayerState(coins=2,
                                           cards=deck[i*2:i*2+2],
                                           agent=a,
-                                          name=f"{type(a)}-{i}")
+                                          name="{name}-{i}".format(name=str(type(a)).split("'")[1].split(".")[-1], i=i))
                                     for i, a in enumerate(agents)],
                     deck=deck[len(agents)+2:])
 
@@ -273,6 +274,7 @@ def randomGameLoop(agents, humanInput=False):
 
 if __name__ == "__main__":
     from agents.bots import *
+    from agents.cli import CLInteractiveAgent
     from statistics import mean
     from collections import Counter
 
