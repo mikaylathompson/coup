@@ -49,7 +49,7 @@ class RandomAgent(BaseAgent):
                 return True
             return None
         elif actionInfo[0].name == "ASSASSINATE":
-            if coup.Reaction.BLOCK_ASSASINATION in reactions:
+            if coup.Reaction.BLOCK_ASSASSINATION in reactions:
                 return True
             return None
         elif actionInfo[0].name == "FOREIGN_AID":
@@ -110,10 +110,12 @@ class MrtBot(RandomAgent):
         cardnames = list(map(lambda x: x.name, cards))
         selects = []
         n_to_select = len(playerView.selfstate.cards)
+        times_through = 0
         while len(selects) < n_to_select:
+            times_through += 1
             if "ASSASSIN" in cardnames:
                 selects.append(coup.Role.ASSASSIN)
-                cardnames.remove("ASSASIN")
+                cardnames.remove("ASSASSIN")
             if "CONTESSA" in cardnames:
                 selects.append(coup.Role.CONTESSA)
                 cardnames.remove("CONTESSA")
@@ -121,6 +123,8 @@ class MrtBot(RandomAgent):
                 selects.append(coup.Role.DUKE)
                 cardnames.remove("DUKE")
             if len(selects) == 0:
+                break
+            if times_through > 3:
                 break
         if "CAPTAIN" in cardnames:
                 selects.append(coup.Role.CAPTAIN)
@@ -161,7 +165,7 @@ class BayBot(BaseAgent):
 
     # ordered preference for actions 
     action_preferences = [
-        "ASSASINATE",
+        "ASSASSINATE",
         "COUP",
         "EXCHANGE", 
         "DUKE_MONEY",
@@ -208,7 +212,7 @@ class BayBot(BaseAgent):
                 return True
             return None
         elif actionInfo[0].name == "ASSASSINATE":
-            if coup.Reaction.BLOCK_ASSASINATION in reactions:
+            if coup.Reaction.BLOCK_ASSASSINATION in reactions:
                 return True
             return None
         elif actionInfo[0].name == "FOREIGN_AID":
@@ -254,10 +258,10 @@ class SeanAgent(RandomAgent):
                 action = coup.Action.FOREIGN_AID
 
         if action in [coup.Action.ASSASSINATE, coup.Action.COUP]:
-            target = random.randint(1, (len(playerView.opponents)))
+            target = random.randint(0, (len(playerView.opponents)) - 1)
         elif action == coup.Action.STEAL:
             try:
-                target = random.choice([i+1 for i, opp in enumerate(playerView.opponents) if opp.coins >= 2])
+                target = random.choice([i for i, opp in enumerate(playerView.opponents) if opp.coins >= 2])
             except IndexError:
                 action = coup.Action.INCOME
                 if coup.Action.DUKE_MONEY in action_list:

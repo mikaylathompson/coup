@@ -20,7 +20,7 @@ class Action(Enum):
 
 class Reaction(Enum):
     BLOCK_FOREIGN_AID = auto()
-    BLOCK_ASSASINATION = auto()
+    BLOCK_ASSASSINATION = auto()
     BLOCK_STEAL = auto()
 
 
@@ -29,7 +29,7 @@ universal_actions = [Action.INCOME, Action.FOREIGN_AID, Action.COUP]
 available_actions = {
         Role.DUKE: universal_actions + [Action.DUKE_MONEY, Reaction.BLOCK_FOREIGN_AID],
         Role.ASSASSIN: universal_actions + [Action.ASSASSINATE],
-        Role.CONTESSA: universal_actions + [Reaction.BLOCK_ASSASINATION],
+        Role.CONTESSA: universal_actions + [Reaction.BLOCK_ASSASSINATION],
         Role.AMBASSADOR: universal_actions + [Action.EXCHANGE, Reaction.BLOCK_STEAL],
         Role.CAPTAIN: universal_actions + [Action.STEAL, Reaction.BLOCK_STEAL]
 }
@@ -118,8 +118,10 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         blockAttempt = target.agent.selectReaction(getPlayerView(gameState, targetPlayer),
                                     (Action.STEAL, activePlayer)) #should adjust for relative position
         if not blockAttempt:
-            player = player._replace(coins = player.coins + 2)
-            target = target._replace(coins = target.coins- 2)
+            newTargetCoins = max(target.coins - 2, 0)
+            delta = target.coins - newTargetCoins
+            player = player._replace(coins = player.coins + delta)
+            target = target._replace(coins = newTargetCoins)
         playerList[activePlayer] = player
         playerList[targetPlayer] = target
         return gameState._replace(players=playerList)
@@ -133,7 +135,6 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         selected = selected[:len(player.cards)]
 
         # Set hand to selected cards, and return remaining to deck.
-        print("Offers are: ", offers)
         for card in selected:
             try:
                 offers.remove(card)
@@ -221,15 +222,20 @@ def randomGameLoop(agents, humanInput=False):
     gameState = initalState
     turns = 0
     while len(gameState.players) > 1:
-        printState(gameState)
+        if (turns > 1000):
+            return None
+        if humanInput:
+            printState(gameState)
         i = turns % len(gameState.players)
+        # print(turns, gameState.players[i].name)
         player = gameState.players[i].agent
         action, relativeTarget = player.selectAction(getPlayerView(gameState, i))
         if relativeTarget is not None:
             target = (i + relativeTarget + 1) % len(gameState.players)
         else:
             target = None
-        print(f"Action: {action} directed at target {target} by Player {gameState.players[i].name}")
+        if humanInput:
+            print(f"Action: {action} directed at target {target} by Player {gameState.players[i].name}")
         gameState = apply_action(gameState, i, action, target)
         turns += 1
         if humanInput:
@@ -238,7 +244,9 @@ def randomGameLoop(agents, humanInput=False):
                 return
     winner_name = gameState.players[0].name
     print("WINNER: ", winner_name)
-    return(winner_name)
+    if 'Sean'in winner_name:
+        print("SEAN WON")
+    return(winner_name.split('-')[0])
 
 
 if __name__ == "__main__":
@@ -246,14 +254,19 @@ if __name__ == "__main__":
     from statistics import mean
     from collections import Counter
 
-    agentList = [RandomAgent()] * 4# + [MrtBot()]
+    # agentList = [SeanAgent(), BayBot(), MrtBot()]
     # for i in range(5):
     #     randomGameLoop(agentList, humanInput=True)
 
-    agentList = [RandomAgent()] * 4# + [MrtBot()]
-    winners = [randomGameLoop(agentList) for _ in range(1000)]
+    winners = []
+    for i in range(1000):
+        agentList = [SeanAgent(), BayBot(), MrtBot(), RandomAgent()]
+        random.shuffle(agentList)
+        winners.append(randomGameLoop(agentList, humanInput=False))
+
+    print("Done.")
     c = Counter(winners)
-    for val, winner in c.most_common(3):
+    for val, winner in c.most_common(5):
         print(val, '\t', winner)
 
 
