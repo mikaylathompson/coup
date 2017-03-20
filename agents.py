@@ -21,7 +21,6 @@ class BaseAgent:
         pass
 
 
-
 class RandomAgent(BaseAgent):
     # Returns a random eligible action.
     def selectAction(self, playerView):
@@ -65,3 +64,116 @@ class RandomAgent(BaseAgent):
     # Returns a random card from hand.
     def selectKilledCard(self, playerView):
         return random.choice(playerView.selfstate.cards)
+
+
+
+class SeanAgent(RandomAgent):
+
+    def selectAction(self, playerView):
+        action_list = coup.find_eligible_actions(playerView.selfstate)
+
+        # This is in order of desirability
+        # More effort here?
+        action = coup.Action.INCOME
+        if coup.Action.DUKE_MONEY in action_list:
+            action = coup.Action.DUKE_MONEY
+        if coup.Action.STEAL in action_list:
+            action = coup.Action.STEAL
+        if coup.Action.ASSASSINATE in action_list:
+            action = coup.Action.ASSASSINATE
+        if coup.Action.COUP in action_list:
+            action = coup.Action.COUP
+
+        # Exchange if we are doing a weak income move
+        if action.value == coup.Action.INCOME.value:
+            if coup.Action.EXCHANGE in action_list:
+                action = coup.Action.EXCHANGE
+
+        if action.value == coup.Action.INCOME.value:
+            # Choose foreign aid once in a while randomly
+            if random.random() > 0.5:
+                action = coup.Action.FOREIGN_AID
+
+        if action in [coup.Action.ASSASSINATE, coup.Action.COUP]:
+            target = random.randint(1, (len(playerView.opponents)))
+        elif action == coup.Action.STEAL:
+            try:
+                target = random.choice([i+1 for i, opp in enumerate(playerView.opponents) if opp.coins >= 2])
+            except IndexError:
+                action = coup.Action.INCOME
+                if coup.Action.DUKE_MONEY in action_list:
+                    action = coup.Action.DUKE_MONEY
+                target = None
+        else:
+            target = None
+        return (action, target)
+
+    def selectExchangeCards(self, playerView, cards):
+        card_nums = [card.value for card in cards]
+        mycards = playerView.selfstate.cards
+        if len(mycards) == 1:
+            if coup.Role.CONTESSA.value in card_nums:
+                return [coup.Role.CONTESSA]
+            if coup.Role.DUKE.value in card_nums:
+                return [coup.Role.DUKE]
+            if coup.Role.CAPTAIN.value in card_nums:
+                return [coup.Role.CAPTAIN]
+            if coup.Role.AMBASSADOR.value in card_nums:
+                return [coup.Role.AMBASSADOR]
+            if coup.Role.ASSASSIN.value in card_nums:
+                return [coup.Role.ASSASSIN]
+            return random.sample(cards, len(playerView.selfstate.cards))
+
+        # Ordering of best
+        if coup.Role.DUKE.value in card_nums and coup.Role.CONTESSA.value in card_nums:
+            return [coup.Role.DUKE, coup.Role.CONTESSA]
+        if coup.Role.CAPTAIN.value in card_nums and coup.Role.DUKE.value in card_nums:
+            return [coup.Role.CAPTAIN, coup.Role.DUKE]
+        if coup.Role.CAPTAIN.value in card_nums and coup.Role.CONTESSA.value in card_nums:
+            return [coup.Role.CAPTAIN, coup.Role.CONTESSA]
+        if coup.Role.DUKE.value in card_nums and coup.Role.ASSASSIN.value in card_nums:
+            return [coup.Role.DUKE, coup.Role.ASSASSIN]
+        if coup.Role.DUKE.value in card_nums and coup.Role.AMBASSADOR.value in card_nums:
+            return [coup.Role.DUKE, coup.Role.AMBASSADOR]
+        return random.sample(cards, len(playerView.selfstate.cards))
+
+    def selectKilledCard(self, playerView):
+        og_cards = playerView.selfstate.cards
+        if len(og_cards) == 1:
+            # SAD WE LOST
+            return og_cards[0]
+
+        cards = [card.value for card in og_cards]
+
+        i = self._save_role(coup.Role.CONTESSA, cards)
+        if i >= 0:
+            return og_cards[i]
+        i = self._save_role(coup.Role.DUKE, cards)
+        if i >= 0:
+            return og_cards[i]
+        i = self._save_role(coup.Role.CAPTAIN, cards)
+        if i >= 0:
+            return og_cards[i]
+        i = self._save_role(coup.Role.ASSASSIN, cards)
+        if i >= 0:
+            return og_cards[i]
+
+        return random.choice(playerView.selfstate.cards)
+
+    def _save_role(self, role, cards):
+        try:
+            i = cards.index(role.value)
+        except ValueError:
+            return -1
+        else:
+            return 0 if i == 1 else 1
+
+
+
+
+
+
+
+
+
+
