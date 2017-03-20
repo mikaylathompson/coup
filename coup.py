@@ -117,7 +117,7 @@ def applyIncome(gameState, activePlayer):
     playerList = gameState.players[:]
     player = playerList[activePlayer]
     playerList[activePlayer] = player._replace(coins = player.coins + 1)
-    return gameState._replace(players=playerList)
+    return gameState._replace(players=playerList), (Action.INCOME, activePlayer)
 
 def applyForeignAid(gameState, activePlayer):
     playerList = gameState.players[:]
@@ -130,13 +130,13 @@ def applyForeignAid(gameState, activePlayer):
         player = player._replace(coins = player.coins + 2)
 
     playerList[activePlayer] = player
-    return gameState._replace(players=playerList)
+    return gameState._replace(players=playerList), (Action.FOREIGN_AID, activePlayer, bool(not any(blockAttempt)))
 
 def applyTax(gameState, activePlayer):
     playerList = gameState.players[:]
     player = playerList[activePlayer]
     playerList[activePlayer] = player._replace(coins = player.coins + 3)
-    return gameState._replace(players=playerList)
+    return gameState._replace(players=playerList), (Action.TAX, activePlayer)
 
 def applySteal(gameState, activePlayer, targetPlayer):
     playerList = gameState.players[:]
@@ -150,7 +150,7 @@ def applySteal(gameState, activePlayer, targetPlayer):
         delta = target.coins - targetCoins
         playerList[activePlayer] = player._replace(coins = player.coins + delta)
         playerList[targetPlayer] = target._replace(coins = targetCoins)
-    return gameState._replace(players=playerList)
+    return gameState._replace(players=playerList), (Action.STEAL, activePlayer, targetPlayer, bool(not blockAttempt))
 
 def applyAssassinate(gameState, activePlayer, targetPlayer):
     playerList = gameState.players[:]
@@ -171,7 +171,7 @@ def applyAssassinate(gameState, activePlayer, targetPlayer):
         else:
             # Target was knocked out of game.
             playerList.pop(targetPlayer)
-    return gameState._replace(players=playerList)
+    return gameState._replace(players=playerList), (Action.ASSASSINATE, activePlayer, targetPlayer, bool(not blockAttempt))
 
 def applyCoup(gameState, activePlayer, targetPlayer):
     playerList = gameState.players[:]
@@ -185,7 +185,7 @@ def applyCoup(gameState, activePlayer, targetPlayer):
         playerList[targetPlayer] = target
     else:
         playerList.pop(targetPlayer)
-    return gameState._replace(players=playerList)
+    return gameState._replace(players=playerList), (Action.COUP, activePlayer, targetPlayer)
 
 def applyExchange(gameState, activePlayer):
     # Select two cards from deck.
@@ -208,7 +208,7 @@ def applyExchange(gameState, activePlayer):
             selected[i] = offers.pop()
 
     playerList[activePlayer] = player._replace(cards=selected)
-    return gameState._replace(players=playerList, deck=gameState.deck + offers)
+    return gameState._replace(players=playerList, deck=gameState.deck + offers), (Action.EXCHANGE, activePlayer)
 
 # Return the new gameState after a player takes an action
 def applyAction(gameState, activePlayer, action, targetPlayer=None):
@@ -250,13 +250,27 @@ def dealGame(deck, agents):
                                     for i, a in enumerate(agents)],
                     deck=deck[len(agents)+2:])
 
-
 def printState(gameState):
     for i, player in enumerate(gameState.players):
         print(f"{player.name}\tCoins: {player.coins}\tCards: {[card.name for card in player.cards]}")
         print()
     print()
 
+def broadcastRelativeTurnSummaries(turnSummary, gameState):
+    for i, player in enumerate(gameState.players):
+        rebuilt = []
+        for term in turnSummary:
+            if isinstance(term, bool):
+                rebuilt.append(term)
+                continue
+            if isinstance(term, int):
+                if term == i:
+                    rebuilt.append(-1)
+                    continue
+                rebuilt.append((term - i - 1) % len(gameState.players))
+                continue
+            rebuilt.append(term)
+        player.agent.turnSummary(getPlayerView(gameState, i), rebuilt)
 
 def randomGameLoop(agents, humanInput=False):
     baseDeck = [Role.DUKE, Role.ASSASSIN, Role.CONTESSA, Role.AMBASSADOR, Role.CAPTAIN] * 3
@@ -279,7 +293,8 @@ def randomGameLoop(agents, humanInput=False):
             target = None
         if humanInput:
             print(f"Action: {action} directed at target {target} by Player {gameState.players[i].name}")
-        gameState = applyAction(gameState, i, action, target)
+        gameState, turnSummary = applyAction(gameState, i, action, target)
+        broadcastRelativeTurnSummaries(turnSummary, gameState)
         turns += 1
         if humanInput:
             x = input().strip()
@@ -303,8 +318,9 @@ if __name__ == "__main__":
     #     randomGameLoop(agentList, humanInput=True)
 
     winners = []
-    for i in range(1000):
-        agentList = [SeanAgent(), BayBot(), MrtBot(), RandomAgent()]
+    for i in range(1):
+        # agentList = [SeanAgent(), BayBot(), MrtBot(), RandomAgent()]
+        agentList = [SeanAgent(), RandomAgent(), BayBot(), MrtBot(), CLInteractiveAgent()]
         random.shuffle(agentList)
         winners.append(randomGameLoop(agentList, humanInput=False))
 
