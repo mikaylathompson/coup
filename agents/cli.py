@@ -1,3 +1,4 @@
+import coup
 
 moneyEmoji = "💰"
 cardEmoji = "🃏"
@@ -39,7 +40,7 @@ def printLeftRightPlayers(leftPlayer, rightPlayer, width):
 def printSelf(playerState, width):
     print('{:^{w}}'.format("YOU", w=width))
     for card in playerState.cards:
-        print('{:^{w}}'.format(cardEmoji + ' ' + card, w=width))
+        print('{:^{w}}'.format(cardEmoji + ' ' + card.name, w=width))
     print('{:^{w}}'.format((moneyEmoji + ' ') * playerState.coins, w=width))
 
 def printView(playerView):
@@ -66,7 +67,7 @@ def printView(playerView):
         print()
         printLeftRightPlayers(playerView.opponents[4], playerView.opponents[0], width)
     print()
-    printSelf()
+    printSelf(playerView.selfstate, width)
     print()
 
 
@@ -75,7 +76,28 @@ class CLInteractiveAgent:
         pass
 
     def selectAction(self, playerView):
-        print()
+        printView(playerView)
+        try:
+            action = coup.Action[input('Action? ').upper()]
+        except:
+            print("Invalid. Try again.")
+            return self.selectAction(playerView)
+        if action not in coup.findEligibleActions(playerView.selfstate):
+            print("That's probably not a valid action.")
+            proceed = input("Are you sure you want to continue? ")
+            if 'y' not in proceed.lower():
+                return self.selectAction(playerView)
+        if action.name in ['ASSASSINATE', 'STEAL', 'COUP']:
+            targetInput = input('Target? ')
+            try:
+                target = int(targetInput)
+            except:
+                target = next((i for i,o in enumerate(playerView.opponents) if o.name == targetInput))
+        else:
+            target = None
+
+        return (action, target)
+
 
     def selectReaction(self, playerView, actionInfo):
         '''Select whether to block an action (usually directed at you)
@@ -85,7 +107,7 @@ class CLInteractiveAgent:
 
         Return True to block the action, False to allow it to occur.
         '''
-        pass
+        return False
 
     def selectExchangeCards(self, playerView, cards):
         '''Select which cards to keep, of the options presented.
@@ -94,12 +116,12 @@ class CLInteractiveAgent:
         Return an ordered list of n or more cards (extras will be discarded), where n
         is the number of cards you have in your hand.
         '''
-        pass
+        return cards[:2]
 
     def selectKilledCard(self, playerView):
         '''Select which one of your cards must be discarded.
 
         Return the role of one card in your hand.
         '''
-        pass
+        return playerView.selfstate.cards[-1]
 
