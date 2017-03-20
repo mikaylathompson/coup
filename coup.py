@@ -213,33 +213,42 @@ def randomGameLoop(agents):
 
 
 if __name__ == "__main__":
-    from agents import RandomAgent
-    from statistics import mean
-    from collections import Counter
-
-    winners = []
+    from agents import RandomAgent, SeanAgent
+    # from statistics import mean
+    # from collections import Counter
     for i in range(1000):
-        _, winningHand = randomGameLoop([RandomAgent()] * 3)
-        winners.append(frozenset(winningHand))
+        print('here')
+        _, winningHand = randomGameLoop([SeanAgent()] + [RandomAgent()] * 3)
 
-    for i in range(1000):
-        _, winningHand = randomGameLoop([RandomAgent()] * 4)
-        winners.append(frozenset(winningHand))
 
-    for i in range(1000):
-        _, winningHand = randomGameLoop([RandomAgent()] * 5)
-        winners.append(frozenset(winningHand))
+# if __name__ == "__main__":
+#     from agents import RandomAgent
+#     from statistics import mean
+#     from collections import Counter
 
-    c = Counter(winners)
+#     winners = []
+#     for i in range(1000):
+#         _, winningHand = randomGameLoop([SeanAgent()] + [RandomAgent()] * 3)
+#         winners.append(frozenset(winningHand))
 
-    for hand, count in c.most_common(5):
-        print(count, '\t', hand)
+#     for i in range(1000):
+#         _, winningHand = randomGameLoop([RandomAgent()] * 4)
+#         winners.append(frozenset(winningHand))
 
-    print()
-    allCounts = c.most_common(len(c.keys()))
-    for hand, count in allCounts[::-1][:10]:
-        print(count, '\t', hand)
-    print(len(allCounts))
+#     for i in range(1000):
+#         _, winningHand = randomGameLoop([RandomAgent()] * 5)
+#         winners.append(frozenset(winningHand))
+
+#     c = Counter(winners)
+
+#     for hand, count in c.most_common(5):
+#         print(count, '\t', hand)
+
+#     print()
+#     allCounts = c.most_common(len(c.keys()))
+#     for hand, count in allCounts[::-1][:10]:
+#         print(count, '\t', hand)
+#     print(len(allCounts))
 
 
 
