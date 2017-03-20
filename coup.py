@@ -178,7 +178,7 @@ def applyCoup(gameState, activePlayer, targetPlayer):
     player = playerList[activePlayer]
     target = playerList[targetPlayer]
     # Player must pay for assassination
-    player = player._replace(coins = player.coins - 7)
+    playerList[activePlayer] = player._replace(coins = player.coins - 7)
     target = removeCard(target,
                         target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer)))
     if target:
