@@ -130,10 +130,13 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         # Offer agent these two + their current cards.
         offers = [deck.pop(), deck.pop()] + player.cards
         selected = player.agent.selectExchangeCards(getPlayerView(gameState, activePlayer), offers)
+        selected = selected[:len(player.cards)]
+
         # Set hand to selected cards, and return remaining to deck.
-        playerList[activePlayer] = player._replace(cards=selected)
+        print("Offers are: ", offers)
         for c in selected:
             offers.remove(c)
+        playerList[activePlayer] = player._replace(cards=selected)
         return gameState._replace(players=playerList, deck=deck + offers)
 
     elif action == Action.ASSASSINATE:
@@ -147,6 +150,10 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
             # Assasination will go forward. Target now gets to select card.
             killedCard = target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer))
             newCards = list(set(target.cards) - set([killedCard]))
+
+            if len(newCards) != len(target.cards) - 1:
+                newCards = target.cards[:-1]
+
             if len(newCards) == 0:
                 # target has been knocked out of game. Do not re-add them to gameState
                 playerList[activePlayer] = player
@@ -167,6 +174,10 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         player = player._replace(coins = player.coins - 7)
         killedCard = target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer))
         newCards = list(set(target.cards) - set([killedCard]))
+
+        if len(newCards) != len(target.cards) - 1:
+            newCards = target.cards[:-1]
+
         if len(newCards) == 0:
             # target has been knocked out of game. Do not re-add them to gameState
             playerList[activePlayer] = player
@@ -180,14 +191,15 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
 
 # Set up an initial gameState for the list of agents.
 def dealGame(deck, agents):
+    from agents import RandomAgent, MrtBot
     random.shuffle(deck)
-    return GameState(players=[PlayerState(coins=2, cards=deck[i*2:i*2+2], agent=a, name=i) for i, a in enumerate(agents)],
+    return GameState(players=[PlayerState(coins=2, cards=deck[i*2:i*2+2], agent=a, name=f"{type(a)}-{i}") for i, a in enumerate(agents)],
                     deck=deck[len(agents)+2:])
 
 
 def printState(gameState):
     for i, player in enumerate(gameState.players):
-        print(f"Coins: {player.coins}\tCards: {[card.name for card in player.cards]}")
+        print(f"{player.name}\tCoins: {player.coins}\tCards: {[card.name for card in player.cards]}")
         print()
     print()
 
@@ -199,47 +211,55 @@ def randomGameLoop(agents):
     gameState = initalState
     turns = 0
     while len(gameState.players) > 1:
+        printState(gameState)
         i = turns % len(gameState.players)
         player = gameState.players[i].agent
         action, relativeTarget = player.selectAction(getPlayerView(gameState, i))
         if relativeTarget is not None:
-            target = (i + relativeTarget) % len(gameState.players)
+            target = (i + relativeTarget + 1) % len(gameState.players)
         else:
             target = None
+        print(f"Action: {action} directed at target {target} by Player {gameState.players[i].name}")
         gameState = apply_action(gameState, i, action, target)
         turns += 1
+        x = input().strip()
+        if x == 'q':
+            return
     winner_name = gameState.players[0].name
     return (turns, initalState.players[winner_name].cards)
 
 
 if __name__ == "__main__":
-    from agents import RandomAgent
+    from agents import RandomAgent, MrtBot
     from statistics import mean
     from collections import Counter
 
-    winners = []
-    for i in range(1000):
-        _, winningHand = randomGameLoop([RandomAgent()] * 3)
-        winners.append(frozenset(winningHand))
 
-    for i in range(1000):
-        _, winningHand = randomGameLoop([RandomAgent()] * 4)
-        winners.append(frozenset(winningHand))
+    randomGameLoop([RandomAgent()] * 2 + [MrtBot()])
 
-    for i in range(1000):
-        _, winningHand = randomGameLoop([RandomAgent()] * 5)
-        winners.append(frozenset(winningHand))
+    # winners = []
+    # for i in range(1000):
+    #     _, winningHand = randomGameLoop([RandomAgent()] * 3)
+    #     winners.append(frozenset(winningHand))
 
-    c = Counter(winners)
+    # for i in range(1000):
+    #     _, winningHand = randomGameLoop([RandomAgent()] * 4)
+    #     winners.append(frozenset(winningHand))
 
-    for hand, count in c.most_common(5):
-        print(count, '\t', hand)
+    # for i in range(1000):
+    #     _, winningHand = randomGameLoop([RandomAgent()] * 5)
+    #     winners.append(frozenset(winningHand))
 
-    print()
-    allCounts = c.most_common(len(c.keys()))
-    for hand, count in allCounts[::-1][:10]:
-        print(count, '\t', hand)
-    print(len(allCounts))
+    # c = Counter(winners)
+
+    # for hand, count in c.most_common(5):
+    #     print(count, '\t', hand)
+
+    # print()
+    # allCounts = c.most_common(len(c.keys()))
+    # for hand, count in allCounts[::-1][:10]:
+    #     print(count, '\t', hand)
+    # print(len(allCounts))
 
 
 
