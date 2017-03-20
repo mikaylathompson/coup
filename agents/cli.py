@@ -125,3 +125,75 @@ class CLInteractiveAgent:
         '''
         return playerView.selfstate.cards[-1]
 
+    def turnSummary(self, playerView, actionInfo):
+        if actionInfo[1] == -1:
+            activePlayer = playerView.selfstate
+        else:
+            activePlayer = playerView.opponents[actionInfo[1]]
+
+        if actionInfo[0].name == 'INCOME':
+            print("{p} took 1 coin as income and now has {n} coins.".format(
+                    p=activePlayer.name, n = activePlayer.coins))
+        elif actionInfo[0].name == 'FOREIGN_AID':
+            if actionInfo[2]:
+                print("{p} took 2 coins as foreign aid and now has {n} coins.".format(
+                    p=activePlayer.name, n=activePlayer.coins))
+            else:
+                print("{p} tried to take foreign aid, but was blocked.".format(
+                    p=activePlayer.name))
+        elif actionInfo[0].name == 'TAX':
+            print("{p} took 3 coins as tax and now has {n} coins.".format(
+                p=activePlayer.name, n=activePlayer.coins))
+        elif actionInfo[0].name == 'EXCHANGE':
+            print("{p} exchanged {n} cards.".format(p=activePlayer.name, n=activePlayer.cards))
+        elif actionInfo[0].name == 'STEAL':
+            if actionInfo[2] == -1:
+                target = playerView.selfstate
+            else:
+                target = playerView.opponents[actionInfo[2]]
+            if actionInfo[3]:
+                print("{p} stole from {t} and now has {n} coins.".format(
+                    p=activePlayer.name, t=target.name, n=activePlayer.coins))
+            else:
+                print("{p} tried to steal from {t} and was blocked.".format(
+                    p=activePlayer.name, t=target.name))
+        elif actionInfo[0].name == 'ASSASSINATE':
+            if actionInfo[2] == -1:
+                target = playerView.selfstate
+                targetName = 'you'
+            elif not(isinstance(actionInfo[2], int)):
+                target = None
+                targetName = actionInfo[2]
+            else:
+                target = playerView.opponents[actionInfo[2]]
+                targetName = target.name
+            if actionInfo[3]:
+                if not target:
+                    print("{p} assassinated {t}, who is now eliminated.".format(
+                        p=activePlayer.name, t=targetName))
+                else:
+                    print("{p} assassinated {t}, but {t} is not yet eliminated.".format(
+                        p=activePlayer.name, t=targetName))
+            else:
+                print("{p} attempted to assassinate {t}, but was blocked.".format(
+                    p=activePlayer.name, t=targetName))
+        elif actionInfo[0].name == 'COUP':
+            if actionInfo[2] == -1:
+                target = playerView.selfstate
+                targetName = 'you'
+            elif not(isinstance(actionInfo[2], int)):
+                target = None
+                targetName = actionInfo[2]
+            else:
+                target = playerView.opponents[actionInfo[2]]
+                targetName = target.name
+            if not target:
+                print("{p} staged a coup on {t}, who is now eliminated.".format(
+                    p=activePlayer.name, t=targetName))
+            else:
+                print("{p} staged a coup on {t}, but {t} is not yet eliminated.".format(
+                    p=activePlayer.name, t=targetName))
+
+
+
+

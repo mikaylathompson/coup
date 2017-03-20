@@ -52,6 +52,7 @@ class BaseAgent:
 
         (Action.INCOME, activePlayer)
         (Action.FOREIGN_AID, activePlayer, success?)
+        (Action.TAX, activePlayer)
         (Action.EXCHANGE, activePlayer)
         (Action.STEAL, activePlayer, targetPlayer, success?)
         (Action.ASSASSINATE, activePlayer, targetPlayer, success?)
@@ -62,10 +63,4 @@ class BaseAgent:
         if the index is -1, you are the involved player.
         '''
         pass
-
-
-
-
-
-
 
