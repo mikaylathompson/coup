@@ -2,7 +2,6 @@ from enum import Enum, auto
 from collections import namedtuple
 import random
 
-
 class Role(Enum):
     DUKE = auto()
     ASSASSIN = auto()
@@ -47,7 +46,7 @@ action_expense = {
 
 # PlayerState is the description of a particular player's state at a given time.
 # Cards is a list of roles, coins is an integer number of coins.
-PlayerState = namedtuple('PlayerState', ['cards', 'coins', 'agent'])
+PlayerState = namedtuple('PlayerState', ['cards', 'coins', 'agent', 'name'])
 
 # GameState is the state of an entire game.
 # Players is a list of PlayerStates for all active players (dead players are dropped)
@@ -159,9 +158,9 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         else:
             # Assasination was blocked, just re-add players
             playerList[activePlayer] = player
-            playerList[targetPlayer] = target 
+            playerList[targetPlayer] = target
         return gameState._replace(players=playerList)
-    
+
     elif action == Action.COUP:
         target = playerList[targetPlayer]
         # Player must pay for assassination
@@ -182,7 +181,7 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
 # Set up an initial gameState for the list of agents.
 def dealGame(deck, agents):
     random.shuffle(deck)
-    return GameState(players=[PlayerState(coins=2, cards=deck[i*2:i*2+2], agent=a) for i, a in enumerate(agents)],
+    return GameState(players=[PlayerState(coins=2, cards=deck[i*2:i*2+2], agent=a, name=i) for i, a in enumerate(agents)],
                     deck=deck[len(agents)+2:])
 
 
@@ -192,55 +191,55 @@ def printState(gameState):
         print()
     print()
 
-if __name__ == "__main__":
-    # assert find_eligible_actions(PlayerState(cards=[Role.DUKE], coins=0, agent=None)) == \
-    #         {Action.INCOME, Action.FOREIGN_AID, Action.DUKE_MONEY}
 
-    # assert find_eligible_actions(PlayerState(cards=[Role.CAPTAIN], coins=0, agent=None)) ==\
-    #         {Action.INCOME, Action.FOREIGN_AID, Action.STEAL}
-
-    # assert find_eligible_actions(PlayerState(cards=[Role.CONTESSA, Role.DUKE], coins=0, agent=None)) ==\
-    #         {Action.INCOME, Action.FOREIGN_AID, Action.DUKE_MONEY}
-
-    # assert find_eligible_actions(PlayerState(cards=[Role.ASSASSIN], coins=8, agent=None)) ==\
-    #         {Action.INCOME, Action.FOREIGN_AID, Action.ASSASSINATE, Action.COUP}
-
-
-    from agents import RandomAgent
-
+def randomGameLoop(agents):
     baseDeck = [Role.DUKE, Role.ASSASSIN, Role.CONTESSA, Role.AMBASSADOR, Role.CAPTAIN] * 4
 
-    players = [RandomAgent()] * 3
-
-    initalState = dealGame(baseDeck, players)
-    printState(initalState)
-
-    i = 0
-    human = input()
+    initalState = dealGame(baseDeck, agents)
     gameState = initalState
-    while human.strip() is not '' and len(gameState.players) > 1:
-        i = i % len(gameState.players)
+    turns = 0
+    while len(gameState.players) > 1:
+        i = turns % len(gameState.players)
         player = gameState.players[i].agent
         action, relativeTarget = player.selectAction(getPlayerView(gameState, i))
         if relativeTarget is not None:
             target = (i + relativeTarget) % len(gameState.players)
         else:
             target = None
-        print(f"Player {i} uses {action.name} towards {target}")
         gameState = apply_action(gameState, i, action, target)
-        printState(gameState)
-        i += 1
-        print()
-        human = input()
-
-    # p1 = initalState.players[0].agent
-    # action, target = p1.selectAction(playerView=getPlayerView(initalState, 0))
-    # print("Action:", action)
-    # newstate = apply_action(initalState, 0, action, target)
-    # print(newstate.players)
+        turns += 1
+    winner_name = gameState.players[0].name
+    return (turns, initalState.players[winner_name].cards)
 
 
+if __name__ == "__main__":
+    from agents import RandomAgent
+    from statistics import mean
+    from collections import Counter
 
+    winners = []
+    for i in range(1000):
+        _, winningHand = randomGameLoop([RandomAgent()] * 3)
+        winners.append(frozenset(winningHand))
+
+    for i in range(1000):
+        _, winningHand = randomGameLoop([RandomAgent()] * 4)
+        winners.append(frozenset(winningHand))
+
+    for i in range(1000):
+        _, winningHand = randomGameLoop([RandomAgent()] * 5)
+        winners.append(frozenset(winningHand))
+
+    c = Counter(winners)
+
+    for hand, count in c.most_common(5):
+        print(count, '\t', hand)
+
+    print()
+    allCounts = c.most_common(len(c.keys()))
+    for hand, count in allCounts[::-1][:10]:
+        print(count, '\t', hand)
+    print(len(allCounts))
 
 
 
