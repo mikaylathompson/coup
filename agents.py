@@ -25,13 +25,9 @@ class BaseAgent:
 class RandomAgent(BaseAgent):
     # Returns a random eligible action.
     def selectAction(self, playerView):
-
-        print("playerView.selfstate: ", playerView.selfstate)
         action_list = coup.find_eligible_actions(playerView.selfstate)
-
-        print("Considered actions: ", action_list)
         action = random.sample(action_list, 1)[0]
-        print("Selected action: ", action)
+
         if action in [coup.Action.ASSASSINATE, coup.Action.COUP]:
             target = random.randint(1, (len(playerView.opponents)))
         elif action == coup.Action.STEAL: 
@@ -44,17 +40,18 @@ class RandomAgent(BaseAgent):
     def selectReaction(self, playerView, actionInfo):
         reactions = set([act for card in playerView.selfstate.cards for act in coup.available_actions[coup.Role[card.name]]
                         if isinstance(act, coup.Reaction)])
-        if actionInfo[0] == coup.Action.STEAL:
-            if Reaction.BLOCK_STEAL in reactions:
-                return Reaction.BLOCK_STEAL
+
+        if actionInfo[0].name == "STEAL":
+            if coup.Reaction.BLOCK_STEAL in reactions:
+                return True
             return None
-        elif actionInfo[0] == coup.Action.ASSASSINATE:
-            if Reaction.BLOCK_ASSASINATION in reactions:
-                return Reaction.BLOCK_ASSASINATION
+        elif actionInfo[0].name == "ASSASSINATE":
+            if coup.Reaction.BLOCK_ASSASINATION in reactions:
+                return True
             return None
-        elif actionInfo[0] == coup.Action.FOREIGN_AID:
-            if Reaction.BLOCK_FOREIGN_AID in reactions:
-                return Reaction.BLOCK_FOREIGN_AID
+        elif actionInfo[0].name == "FOREIGN_AID":
+            if len(list(filter(lambda x: x.name == 'BLOCK_FOREIGN_AID', reactions))):
+                return True
             return None
 
     # Returns a random selection of cards.

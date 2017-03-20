@@ -62,18 +62,14 @@ PlayerView = namedtuple('PlayerView', ['selfstate', 'opponents'])
 
 def find_eligible_actions(playerState):
     if playerState.coins >= 10:
-        print(">10 coins means must coup")
         return set([Action.COUP])
-    print("I claim I don't have 10 coins, I have:", playerState.coins)
     try:
         cards = playerState.cards
-        print(cards)
         return set([act for card in cards for act in available_actions[card]
                     if (isinstance(act, Action) and action_expense[act] <= playerState.coins)])
     except KeyError:
         # Who knows why I have to do this???
         cards = list(map(lambda x: Role[x.name], playerState.cards))
-        print(cards)
         return set([act for card in cards for act in available_actions[card]
                     if (isinstance(act, Action) and action_expense[act] <= playerState.coins)])
 
@@ -88,7 +84,6 @@ def getPlayerView(gameState, activePlayer):
 
 # Return the new gameState after a player takes an action
 def apply_action(gameState, activePlayer, action, targetPlayer=None):
-    print("About to apply: ", action)
 
     # WHY DO I HAVE TO DO THIS?!?!
     action = Action[action.name]
@@ -103,10 +98,10 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
 
     elif action == Action.FOREIGN_AID:
         # All opponents get the opportunity to block
-        reactions = [opp.agent.selectReaction(getPlayerView(gameState, i),
+        blockAttempt = [opp.agent.selectReaction(getPlayerView(gameState, i),
                                               (Action.FOREIGN_AID, activePlayer))
                                             for i, opp in enumerate(playerList) if opp is not player]
-        if Reaction.BLOCK_FOREIGN_AID not in reactions:
+        if not any(blockAttempt):
             player = player._replace(coins = player.coins + 2)
 
         playerList[activePlayer] = player
@@ -121,9 +116,9 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         target = playerList[targetPlayer]
 
         # Target gets the opportunity to block:
-        reaction = target.agent.selectReaction(getPlayerView(gameState, targetPlayer),
+        blockAttempt = target.agent.selectReaction(getPlayerView(gameState, targetPlayer),
                                     (Action.STEAL, activePlayer)) #should adjust for relative position
-        if reaction != Reaction.BLOCK_STEAL:
+        if not blockAttempt:
             player = player._replace(coins = player.coins + 2)
             target = target._replace(coins = target.coins- 2)
         playerList[activePlayer] = player
@@ -147,9 +142,9 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         # Player must pay for assassination
         player = player._replace(coins = player.coins - 3)
         # Target gets the opportunity to block:
-        reaction = target.agent.selectReaction(getPlayerView(gameState, targetPlayer),
-                                    (Action.STEAL, activePlayer)) #should adjust for relative position
-        if reaction != Reaction.BLOCK_ASSASINATION:
+        blockAttempt = target.agent.selectReaction(getPlayerView(gameState, targetPlayer),
+                                    (Action.ASSASSINATE, activePlayer)) #should adjust for relative position
+        if not blockAttempt:
             # Assasination will go forward. Target now gets to select card.
             killedCard = target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer))
             newCards = list(set(target.cards) - set([killedCard]))
@@ -174,7 +169,6 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         killedCard = target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer))
         newCards = list(set(target.cards) - set([killedCard]))
         if len(newCards) == 0:
-            print("Target should be knocked out.")
             # target has been knocked out of game. Do not re-add them to gameState
             playerList[activePlayer] = player
             playerList.pop(targetPlayer)
@@ -221,7 +215,6 @@ if __name__ == "__main__":
     initalState = dealGame(baseDeck, players)
     printState(initalState)
 
-    print()
     i = 0
     human = input()
     gameState = initalState
@@ -231,14 +224,12 @@ if __name__ == "__main__":
         action, relativeTarget = player.selectAction(getPlayerView(gameState, i))
         if relativeTarget is not None:
             target = (i + relativeTarget) % len(gameState.players)
-            print(f"Relative target was {relativeTarget}. I calculate target={target}")
         else:
             target = None
-        print(f"Action by player {i}:", action)
+        print(f"Player {i} uses {action.name} towards {target}")
         gameState = apply_action(gameState, i, action, target)
         printState(gameState)
         i += 1
-        print()
         print()
         human = input()
 
