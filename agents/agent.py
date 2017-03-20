@@ -43,3 +43,29 @@ class BaseAgent:
         '''
         pass
 
+    def turnSummary(self, playerView, actionInfo):
+        '''Summary of the just-occurred turn.
+        Any return value will be discarded.
+        The playerView is the state of this game AFTER the action.
+
+        Possible values of actionInfo:
+
+        (Action.INCOME, activePlayer)
+        (Action.FOREIGN_AID, activePlayer, success?)
+        (Action.EXCHANGE, activePlayer)
+        (Action.STEAL, activePlayer, targetPlayer, success?)
+        (Action.ASSASSINATE, activePlayer, targetPlayer, success?)
+        (Action.COUP, activePlayer, targetPlayer)
+
+        activePlayer & targetPlayer are their index in the playerView.opponents array
+        if targetPlayer was eliminated, their NAME is returned instead.
+        if the index is -1, you are the involved player.
+        '''
+        pass
+
+
+
+
+
+
+
