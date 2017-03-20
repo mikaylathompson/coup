@@ -272,7 +272,7 @@ def randomGameLoop(agents, humanInput=False):
 
 
 if __name__ == "__main__":
-    from agents import *
+    from agents.bots import *
     from statistics import mean
     from collections import Counter
 
