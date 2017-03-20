@@ -134,8 +134,19 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
 
         # Set hand to selected cards, and return remaining to deck.
         print("Offers are: ", offers)
-        for c in selected:
-            offers.remove(c)
+        for card in selected:
+            try:
+                offers.remove(card)
+            except Exception:
+                # Handle Enum issues by forcing usage of values
+                offer_values = [offer.value for offer in offers]
+                if card.value in offer_values:
+                    offer_values.remove(card.value)
+                    # Rebuild offers
+                    offers = [Role(value) for value in offer_values]
+                else:
+                    # This shouldn't happen
+                    raise
         playerList[activePlayer] = player._replace(cards=selected)
         return gameState._replace(players=playerList, deck=deck + offers)
 
@@ -203,7 +214,7 @@ def printState(gameState):
     print()
 
 
-def randomGameLoop(agents):
+def randomGameLoop(agents, humanInput=False):
     baseDeck = [Role.DUKE, Role.ASSASSIN, Role.CONTESSA, Role.AMBASSADOR, Role.CAPTAIN] * 3
 
     initalState = dealGame(baseDeck, agents)
@@ -221,44 +232,29 @@ def randomGameLoop(agents):
         print(f"Action: {action} directed at target {target} by Player {gameState.players[i].name}")
         gameState = apply_action(gameState, i, action, target)
         turns += 1
-        x = input().strip()
-        if x == 'q':
-            return
+        if humanInput:
+            x = input().strip()
+            if x == 'q':
+                return
     winner_name = gameState.players[0].name
     print("WINNER: ", winner_name)
+    return(winner_name)
 
 
 if __name__ == "__main__":
-    from agents import RandomAgent, BayBot
+    from agents import *
     from statistics import mean
     from collections import Counter
 
+    agentList = [RandomAgent()] * 4# + [MrtBot()]
+    # for i in range(5):
+    #     randomGameLoop(agentList, humanInput=True)
 
-    randomGameLoop([RandomAgent()] * 2 + [BayBot()])
-
-    # winners = []
-    # for i in range(1000):
-    #     _, winningHand = randomGameLoop([RandomAgent()] * 3)
-    #     winners.append(frozenset(winningHand))
-
-    # for i in range(1000):
-    #     _, winningHand = randomGameLoop([RandomAgent()] * 4)
-    #     winners.append(frozenset(winningHand))
-
-    # for i in range(1000):
-    #     _, winningHand = randomGameLoop([RandomAgent()] * 5)
-    #     winners.append(frozenset(winningHand))
-
-    # c = Counter(winners)
-
-    # for hand, count in c.most_common(5):
-    #     print(count, '\t', hand)
-
-    # print()
-    # allCounts = c.most_common(len(c.keys()))
-    # for hand, count in allCounts[::-1][:10]:
-    #     print(count, '\t', hand)
-    # print(len(allCounts))
+    agentList = [RandomAgent()] * 4# + [MrtBot()]
+    winners = [randomGameLoop(agentList) for _ in range(1000)]
+    c = Counter(winners)
+    for val, winner in c.most_common(3):
+        print(val, '\t', winner)
 
 
 
