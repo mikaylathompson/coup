@@ -109,34 +109,31 @@ class SeanAgent(RandomAgent):
         return (action, target)
 
     def selectExchangeCards(self, playerView, cards):
-        import pdb; pdb.set_trace()
-
-        cards = [card.value for card in cards]
-
+        card_nums = [card.value for card in cards]
         mycards = playerView.selfstate.cards
         if len(mycards) == 1:
-            if coup.Role.CONTESSA.value in cards:
+            if coup.Role.CONTESSA.value in card_nums:
                 return [coup.Role.CONTESSA]
-            if coup.Role.DUKE.value in cards:
+            if coup.Role.DUKE.value in card_nums:
                 return [coup.Role.DUKE]
-            if coup.Role.CAPTAIN.value in cards:
+            if coup.Role.CAPTAIN.value in card_nums:
                 return [coup.Role.CAPTAIN]
-            if coup.Role.AMBASSADOR.value in cards:
+            if coup.Role.AMBASSADOR.value in card_nums:
                 return [coup.Role.AMBASSADOR]
-            if coup.Role.ASSASSIN.value in cards:
+            if coup.Role.ASSASSIN.value in card_nums:
                 return [coup.Role.ASSASSIN]
             return random.sample(cards, len(playerView.selfstate.cards))
 
         # Ordering of best
-        if coup.Role.DUKE.value in cards and coup.Role.CONTESSA.value in cards:
+        if coup.Role.DUKE.value in card_nums and coup.Role.CONTESSA.value in card_nums:
             return [coup.Role.DUKE, coup.Role.CONTESSA]
-        if coup.Role.CAPTAIN.value in cards and coup.Role.DUKE.value in cards:
+        if coup.Role.CAPTAIN.value in card_nums and coup.Role.DUKE.value in card_nums:
             return [coup.Role.CAPTAIN, coup.Role.DUKE]
-        if coup.Role.CAPTAIN.value in cards and coup.Role.CONTESSA.value in cards:
+        if coup.Role.CAPTAIN.value in card_nums and coup.Role.CONTESSA.value in card_nums:
             return [coup.Role.CAPTAIN, coup.Role.CONTESSA]
-        if coup.Role.DUKE.value in cards and coup.Role.ASSASSIN.value in cards:
+        if coup.Role.DUKE.value in card_nums and coup.Role.ASSASSIN.value in card_nums:
             return [coup.Role.DUKE, coup.Role.ASSASSIN]
-        if coup.Role.DUKE.value in cards and coup.Role.AMBASSADOR.value in cards:
+        if coup.Role.DUKE.value in card_nums and coup.Role.AMBASSADOR.value in card_nums:
             return [coup.Role.DUKE, coup.Role.AMBASSADOR]
         return random.sample(cards, len(playerView.selfstate.cards))
 
