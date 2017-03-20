@@ -226,7 +226,7 @@ def randomGameLoop(agents):
         if x == 'q':
             return
     winner_name = gameState.players[0].name
-    return (turns, initalState.players[winner_name].cards)
+    print("WINNER: ", winner_name)
 
 
 if __name__ == "__main__":
