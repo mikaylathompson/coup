@@ -95,7 +95,7 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
     elif action == Action.FOREIGN_AID:
         # All opponents get the opportunity to block
         blockAttempt = [opp.agent.selectReaction(getPlayerView(gameState, i),
-                                              (Action.FOREIGN_AID, activePlayer))
+                                              (Action.FOREIGN_AID, (activePlayer - i) % len(playerList)))
                                             for i, opp in enumerate(playerList) if opp is not player]
         if not any(blockAttempt):
             player = player._replace(coins = player.coins + 2)
@@ -113,8 +113,9 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
 
         # Target gets the opportunity to block:
         blockAttempt = target.agent.selectReaction(getPlayerView(gameState, targetPlayer),
-                                    (Action.STEAL, activePlayer)) #should adjust for relative position
+                                    (Action.STEAL, (activePlayer - targetPlayer) % len(playerList)))
         if not blockAttempt:
+            # Verify/adjust the number of coins being stolen.
             newTargetCoins = max(target.coins - 2, 0)
             delta = target.coins - newTargetCoins
             player = player._replace(coins = player.coins + delta)
@@ -125,9 +126,8 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
 
     elif action == Action.EXCHANGE:
         # Select two cards from deck.
-        deck = random.sample(gameState.deck, len(gameState.deck))
         # Offer agent these two + their current cards.
-        offers = [deck.pop(), deck.pop()] + player.cards
+        offers = random.sample(gameState.deck, 2) + player.cards
         selected = player.agent.selectExchangeCards(getPlayerView(gameState, activePlayer), offers)
         selected = selected[:len(player.cards)]
 
@@ -154,10 +154,12 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         player = player._replace(coins = player.coins - 3)
         # Target gets the opportunity to block:
         blockAttempt = target.agent.selectReaction(getPlayerView(gameState, targetPlayer),
-                                    (Action.ASSASSINATE, activePlayer)) #should adjust for relative position
+                                    (Action.ASSASSINATE, (activePlayer - targetPlayer) % len(playerList)))
         if not blockAttempt:
             # Assasination will go forward. Target now gets to select card.
             killedCard = target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer))
+            # Check that a valid card was returned
+            assert killedCard in target.cards
             newCards = list(set(target.cards) - set([killedCard]))
 
             if len(newCards) != len(target.cards) - 1:
@@ -182,6 +184,7 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
         # Player must pay for assassination
         player = player._replace(coins = player.coins - 7)
         killedCard = target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer))
+        assert killedCard in target.cards
         newCards = list(set(target.cards) - set([killedCard]))
 
         if len(newCards) != len(target.cards) - 1:
@@ -265,7 +268,5 @@ if __name__ == "__main__":
     c = Counter(winners)
     for val, winner in c.most_common(5):
         print(val, '\t', winner)
-
-
 
 
