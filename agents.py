@@ -66,6 +66,87 @@ class RandomAgent(BaseAgent):
         return random.choice(playerView.selfstate.cards)
 
 
+class MrtBot(RandomAgent):
+    def selectAction(self, playerView):
+        action_list = list(map(lambda x: x.name, coup.find_eligible_actions(playerView.selfstate)))
+        if "COUP" in action_list:
+            # COUP SOMEONE
+            for i, opp in enumerate(playerView.opponents):
+                if opp.cards == 2 and opp.coins >= 7:
+                    return (coup.Action.COUP, i)
+
+            for i, opp in enumerate(playerView.opponents):
+                if opp.coins >= 6:
+                    return (coup.Action.COUP, i)
+
+            for i, opp in enumerate(playerView.opponents):
+                if opp.cards == 2:
+                    return (coup.Action.COUP, i)
+            return (coup.Action.COUP, 0)
+
+        if "ASSASSINATE" in action_list:
+            for i, opp in enumerate(playerView.opponents):
+                if opp.cards == 2 and opp.coins >= 7:
+                    return (coup.Action.ASSASSINATE, i)
+
+            for i, opp in enumerate(playerView.opponents):
+                if opp.coins >= 6:
+                    return (coup.Action.ASSASSINATE, i)
+
+            for i, opp in enumerate(playerView.opponents):
+                if opp.cards == 2:
+                    return (coup.Action.ASSASSINATE, i)
+            return (coup.Action.ASSASSINATE, 0)
+
+        if "DUKE_MONEY" in action_list:
+            return (coup.Action.DUKE_MONEY, None)
+
+        if "EXCHANGE" in action_list:
+            return (coup.Action.EXCHANGE, None)
+        return (coup.Action.INCOME, None)
+
+
+    def selectExchangeCards(self, playerView, cards):
+        cardnames = list(map(lambda x: x.name, cards))
+        selects = []
+        n_to_select = len(playerView.selfstate.cards)
+        while len(selects) < n_to_select:
+            if "ASSASSIN" in cardnames:
+                selects.append(coup.Role.ASSASSIN)
+                cardnames.remove("ASSASIN")
+            if "CONTESSA" in cardnames:
+                selects.append(coup.Role.CONTESSA)
+                cardnames.remove("CONTESSA")
+            if "DUKE" in cardnames:
+                selects.append(coup.Role.DUKE)
+                cardnames.remove("DUKE")
+            if len(selects) == 0:
+                break
+        if "CAPTAIN" in cardnames:
+                selects.append(coup.Role.CAPTAIN)
+        if "AMBASSADOR" in cardnames:
+                selects.append(coup.Role.AMBASSADOR)
+        print(selects[:n_to_select])
+        return selects[:n_to_select]
+
+    def selectKilledCard(self, playerView):
+        if len(playerView.selfstate.cards) == 1:
+            return playerView.selfstate.cards[0]
+        cardnames = list(map(lambda x: x.name, playerView.selfstate.cards))
+        if 'AMBASSADOR' in cardnames:
+            return coup.Role.AMBASSADOR
+        if 'CAPTAIN' in cardnames:
+            return coup.Role.CAPTAIN
+        if 'DUKE' in cardnames:
+            return coup.Role.DUKE
+        if 'ASSASSIN' in cardnames:
+            return coup.Role.ASSASSIN
+        return coup.Role.CONTESSA
+
+
+
+
+
 
 class BayBot(BaseAgent):
 
