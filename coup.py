@@ -134,8 +134,19 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
 
         # Set hand to selected cards, and return remaining to deck.
         print("Offers are: ", offers)
-        for c in selected:
-            offers.remove(c)
+        for card in selected:
+            try:
+                offers.remove(card)
+            except Exception:
+                # Handle Enum issues by forcing usage of values
+                offer_values = [offer.value for offer in offers]
+                if card.value in offer_values:
+                    offer_values.remove(card.value)
+                    # Rebuild offers
+                    offers = [Role(value) for value in offer_values]
+                else:
+                    # This shouldn't happen
+                    raise
         playerList[activePlayer] = player._replace(cards=selected)
         return gameState._replace(players=playerList, deck=deck + offers)
 
