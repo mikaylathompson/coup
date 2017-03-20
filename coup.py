@@ -94,7 +94,6 @@ def removeCard(playerState, card, replacement=None):
     If the card is not in the player's hand, an arbitrary card from their hand will be taken.
     If they are left with 0 cards, and no replacement, None will be returned.
     '''
-    assert card in playerState.cards
     if card not in playerState.cards:
         # You didn't follow the rules, so I get to take any card.
         card = playerState.cards[-1]
@@ -107,6 +106,15 @@ def removeCard(playerState, card, replacement=None):
         return None
     return playerState._replace(cards=cards)
 
+def getCardsFromDeck(gameState, nCards):
+    '''Basically, sample without replacement from the game deck.
+    Returns the cards, and the updated gameState.
+    '''
+    deck = random.sample(gameState.deck, len(gameState.deck))
+    cards = []
+    for _ in range(nCards):
+        cards.append(deck.pop())
+    return cards, gameState._replace(deck=deck)
 
 # Return the new gameState after a player takes an action
 def applyAction(gameState, activePlayer, action, targetPlayer=None):
@@ -158,10 +166,10 @@ def applyAction(gameState, activePlayer, action, targetPlayer=None):
     elif action == Action.EXCHANGE:
         # Select two cards from deck.
         # Offer agent these two + their current cards.
-        offers = random.sample(gameState.deck, 2) + player.cards # TODO: I added a bug where this now doesn't remove the chosen cards from the deck
+        offers, gameState = getCardsFromDeck(gameState, 2)
+        offers += player.cards
         selected = player.agent.selectExchangeCards(getPlayerView(gameState, activePlayer), offers)
         selected = selected[:len(player.cards)]
-
         # Set hand to selected cards, and return remaining to deck.
         for card in selected:
             try:
@@ -177,7 +185,7 @@ def applyAction(gameState, activePlayer, action, targetPlayer=None):
                     # This shouldn't happen
                     raise
         playerList[activePlayer] = player._replace(cards=selected)
-        return gameState._replace(players=playerList, deck=deck + offers)
+        return gameState._replace(players=playerList, deck=gameState.deck + offers)
 
     elif action == Action.ASSASSINATE:
         target = playerList[targetPlayer]
