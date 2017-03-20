@@ -51,7 +51,7 @@ class BaseAgent:
 class RandomAgent(BaseAgent):
     # Returns a random eligible action.
     def selectAction(self, playerView):
-        action_list = coup.find_eligible_actions(playerView.selfstate)
+        action_list = coup.findEligibleActions(playerView.selfstate)
         action = random.sample(action_list, 1)[0]
 
         if action in [coup.Action.ASSASSINATE, coup.Action.COUP]:
@@ -95,7 +95,7 @@ class RandomAgent(BaseAgent):
 
 class MrtBot(RandomAgent):
     def selectAction(self, playerView):
-        action_list = list(map(lambda x: x.name, coup.find_eligible_actions(playerView.selfstate)))
+        action_list = list(map(lambda x: x.name, coup.findEligibleActions(playerView.selfstate)))
         if "COUP" in action_list:
             # COUP SOMEONE
             for i, opp in enumerate(playerView.opponents):
@@ -205,7 +205,7 @@ class BayBot(BaseAgent):
     def selectAction(self, playerView):
 
         # return first legal action by preference
-        action_list = coup.find_eligible_actions(playerView.selfstate)
+        action_list = coup.findEligibleActions(playerView.selfstate)
         action_names = list(map(lambda x: x.name, action_list))
         action = [i for i in self.action_preferences if (i in action_names)][0]
         action = coup.Action[action]
@@ -260,7 +260,7 @@ class BayBot(BaseAgent):
 class SeanAgent(RandomAgent):
 
     def selectAction(self, playerView):
-        action_list = coup.find_eligible_actions(playerView.selfstate)
+        action_list = coup.findEligibleActions(playerView.selfstate)
 
         # This is in order of desirability
         # More effort here?

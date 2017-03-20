@@ -59,7 +59,7 @@ GameState = namedtuple('GameState', ['players', 'deck'])
 PlayerView = namedtuple('PlayerView', ['selfstate', 'opponents'])
 
 
-def find_eligible_actions(playerState):
+def findEligibleActions(playerState):
     if playerState.coins >= 10:
         return set([Action.COUP])
     try:
@@ -109,7 +109,7 @@ def removeCard(playerState, card, replacement=None):
 
 
 # Return the new gameState after a player takes an action
-def apply_action(gameState, activePlayer, action, targetPlayer=None):
+def applyAction(gameState, activePlayer, action, targetPlayer=None):
     # WHY DO I HAVE TO DO THIS?!?!
     action = Action[action.name]
 
@@ -214,7 +214,11 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
 # Set up an initial gameState for the list of agents.
 def dealGame(deck, agents):
     random.shuffle(deck)
-    return GameState(players=[PlayerState(coins=2, cards=deck[i*2:i*2+2], agent=a, name=f"{type(a)}-{i}") for i, a in enumerate(agents)],
+    return GameState(players=[PlayerState(coins=2,
+                                          cards=deck[i*2:i*2+2],
+                                          agent=a,
+                                          name=f"{type(a)}-{i}")
+                                    for i, a in enumerate(agents)],
                     deck=deck[len(agents)+2:])
 
 
@@ -246,7 +250,7 @@ def randomGameLoop(agents, humanInput=False):
             target = None
         if humanInput:
             print(f"Action: {action} directed at target {target} by Player {gameState.players[i].name}")
-        gameState = apply_action(gameState, i, action, target)
+        gameState = applyAction(gameState, i, action, target)
         turns += 1
         if humanInput:
             x = input().strip()
