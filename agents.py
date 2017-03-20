@@ -56,7 +56,7 @@ class RandomAgent(BaseAgent):
 
         if action in [coup.Action.ASSASSINATE, coup.Action.COUP]:
             target = random.randint(0, (len(playerView.opponents)) - 1)
-        elif action == coup.Action.STEAL: 
+        elif action == coup.Action.STEAL:
             try:
                 target = random.choice([i for i, opp in enumerate(playerView.opponents) if opp.coins >= 2])
             except IndexError:
@@ -190,11 +190,11 @@ class BayBot(BaseAgent):
         "AMBASSADOR"
     ]
 
-    # ordered preference for actions 
+    # ordered preference for actions
     action_preferences = [
         "ASSASSINATE",
         "COUP",
-        "EXCHANGE", 
+        "EXCHANGE",
         "DUKE_MONEY",
         "STEAL",
         "INCOME",
@@ -224,9 +224,9 @@ class BayBot(BaseAgent):
         # default is to attack strongest player
         target = opps[0][0]
 
-        # TODO: unless stealing, in which case choose strongest player 
+        # TODO: unless stealing, in which case choose strongest player
         #       w/ at least 2 coins who has not blocked you before
-       
+
         return (action, target)
 
 
@@ -249,14 +249,14 @@ class BayBot(BaseAgent):
 
     def selectExchangeCards(self, playerView, cards):
         ordered_cards = sorted(cards, key=lambda x: self.card_preferences.index(x.name))
-        return ordered_cards[:len(playerView.selfstate.cards)]   
+        return ordered_cards[:len(playerView.selfstate.cards)]
 
     # Returns a random card from hand.
     def selectKilledCard(self, playerView):
         ordered_cards = sorted(playerView.selfstate.cards, key=lambda x: self.card_preferences.index(x.name))
-        return ordered_cards[-1]   
+        return ordered_cards[-1]
 
-      
+
 class SeanAgent(RandomAgent):
 
     def selectAction(self, playerView):
