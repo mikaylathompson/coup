@@ -72,12 +72,10 @@ def findEligibleActions(playerState):
         return set([act for card in cards for act in available_actions[card]
                     if (isinstance(act, Action) and action_expense[act] <= playerState.coins)])
 
-
 def getPlayerView(gameState, activePlayer):
     return PlayerView(selfstate=gameState.players[activePlayer],
             opponents = list(map(lambda x: x._replace(cards=len(x.cards), agent=None),
                     gameState.players[activePlayer+1:] + gameState.players[:activePlayer])))
-
 
 def canAffordAction(playerState, action):
     '''Returns true if a player can afford an action.
@@ -86,7 +84,6 @@ def canAffordAction(playerState, action):
     '''
     return playerState.coins >= action_expense[action] and \
                 action == Action.COUP if playerState.coins > 10 else True
-
 
 def removeCard(playerState, card, replacement=None):
     ''' Remove a card from a players hand, and (possibly) replace it with a new one.
@@ -124,6 +121,7 @@ def applyIncome(gameState, activePlayer):
 
 def applyForeignAid(gameState, activePlayer):
     playerList = gameState.players[:]
+    player = playerList[activePlayer]
     # All opponents get the opporunity to block
     blockAttempt = [opp.agent.selectReaction(getPlayerView(gameState, i),
                                              (Action.FOREIGN_AID, (activePlayer - i) % len(playerList)))
@@ -141,7 +139,7 @@ def applyTax(gameState, activePlayer):
     return gameState._replace(players=playerList)
 
 def applySteal(gameState, activePlayer, targetPlayer):
-    playerList = playerList[:]
+    playerList = gameState.players[:]
     player = playerList[activePlayer]
     target = playerList[targetPlayer]
     # Target gets the opportunity to block:
@@ -155,7 +153,7 @@ def applySteal(gameState, activePlayer, targetPlayer):
     return gameState._replace(players=playerList)
 
 def applyAssassinate(gameState, activePlayer, targetPlayer):
-    playerList = playerList[:]
+    playerList = gameState.players[:]
     player = playerList[activePlayer]
     target = playerList[targetPlayer]
     # Player must pay for assassination
@@ -176,7 +174,7 @@ def applyAssassinate(gameState, activePlayer, targetPlayer):
     return gameState._replace(players=playerList)
 
 def applyCoup(gameState, activePlayer, targetPlayer):
-    playerList = playerList[:]
+    playerList = gameState.players[:]
     player = playerList[activePlayer]
     target = playerList[targetPlayer]
     # Player must pay for assassination
@@ -192,6 +190,8 @@ def applyCoup(gameState, activePlayer, targetPlayer):
 def applyExchange(gameState, activePlayer):
     # Select two cards from deck.
     # Offer agent these two + their current cards.
+    playerList = gameState.players[:]
+    player = playerList[activePlayer]
     offers, gameState = getCardsFromDeck(gameState, 2)
     offers += player.cards
     selected = player.agent.selectExchangeCards(getPlayerView(gameState, activePlayer), offers)
@@ -215,8 +215,7 @@ def applyAction(gameState, activePlayer, action, targetPlayer=None):
     # WHY DO I HAVE TO DO THIS?!?!
     action = Action[action.name]
 
-    playerList = gameState.players[:]
-    player = playerList[activePlayer]
+    player = gameState.players[activePlayer]
     assert canAffordAction(player, action)
 
     if action == Action.INCOME:
