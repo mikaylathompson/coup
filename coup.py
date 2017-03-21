@@ -278,19 +278,15 @@ def printState(gameState):
 
 def broadcastRelativeTurnSummaries(turnSummary, gameState):
     for i, player in enumerate(gameState.players):
-        rebuilt = []
-        for term in turnSummary:
-            if isinstance(term, bool):
-                rebuilt.append(term)
-                continue
-            if isinstance(term, int):
-                if term == i:
-                    rebuilt.append(-1)
-                    continue
-                rebuilt.append((term - i - 1) % len(gameState.players))
-                continue
-            rebuilt.append(term)
-        player.agent.turnSummary(getPlayerView(gameState, i), rebuilt)
+        if turnSummary.activePlayer == i:
+            rt = turnSummary._replace(activePlayer=-1)
+        else:
+            rt = turnSummary._replace(activePlayer=(activePlayer - i - 1) % len(gameState.players))
+        if 'targetPlayer' in turnSummary:
+            if targetPlayer == i:
+                rt = rt._replace(targetPlayer=-1)
+            rt = rt._replace(targetPlayer=(targetPlayer - i - 1) % len(gameState.players))
+        player.agent.turnSummary(getPlayerView(gameState, i), relative)
 
 def gameLoop(agents, humanInput=False):
     baseDeck = [Role.DUKE, Role.ASSASSIN, Role.CONTESSA, Role.AMBASSADOR, Role.CAPTAIN] * 3
