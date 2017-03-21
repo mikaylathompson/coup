@@ -120,23 +120,33 @@ class CLInteractiveAgent:
 
         Return True to block the action, False to allow it to occur.
         '''
-        return False
+        try:
+            activePlayer = playerView.opponents[actionInfo[1]]
+        except:
+            print(actionInfo[1])
+            print(playerView.opponents)
+            activePlayer = playerView.opponents[-1] # This is weird, and I can't figure out the math to make this happen.
+        print("{name} is trying to {action}.".format(name=activePlayer.name, action=actionInfo[0].name))
+        block = input("Block?")
+        if 'n' in block.lower():
+            return False
+        # Should verify that I have the right to do this.
+        return True
 
     def selectExchangeCards(self, playerView, cards):
-        '''Select which cards to keep, of the options presented.
-        cards is a list of roles, from which you must discard two and keep the remainder.
-
-        Return an ordered list of n or more cards (extras will be discarded), where n
-        is the number of cards you have in your hand.
-        '''
-        return cards[:2]
+        print("Select {n} of the following cards:".format(len(cards) -2))
+        print('\n'.join(zip(range(len(cards)), cards)))
+        selections = input("Index(es) of selection(s)? ").strip().split()
+        newCards = []
+        for choice in selections:
+            newCards.append(cards[int(choice)])
+        return newCards
 
     def selectKilledCard(self, playerView):
-        '''Select which one of your cards must be discarded.
-
-        Return the role of one card in your hand.
-        '''
-        return playerView.selfstate.cards[-1]
+        print("Select which of these to kill:")
+        print('\n'.join(zip(range(len(playerView.selfstate.cards)), playerView.selfstate.cards)))
+        selection= int(input("Index of card to kill? ").strip())
+        return playerView.selfstate.cards[selection]
 
     def turnSummary(self, playerView, summary):
         if summary.activePlayer == -1:
