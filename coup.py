@@ -272,7 +272,7 @@ def broadcastRelativeTurnSummaries(turnSummary, gameState):
             rebuilt.append(term)
         player.agent.turnSummary(getPlayerView(gameState, i), rebuilt)
 
-def randomGameLoop(agents, humanInput=False):
+def gameLoop(agents, humanInput=False):
     baseDeck = [Role.DUKE, Role.ASSASSIN, Role.CONTESSA, Role.AMBASSADOR, Role.CAPTAIN] * 3
 
     initalState = dealGame(baseDeck, agents)
@@ -301,9 +301,6 @@ def randomGameLoop(agents, humanInput=False):
             if x == 'q':
                 return
     winner_name = gameState.players[0].name
-    print("WINNER: ", winner_name)
-    if 'Sean'in winner_name:
-        print("SEAN WON")
     return(winner_name.split('-')[0])
 
 
@@ -322,7 +319,7 @@ if __name__ == "__main__":
         # agentList = [SeanAgent(), BayBot(), MrtBot(), RandomAgent()]
         agentList = [SeanAgent(), RandomAgent(), BayBot(), MrtBot(), CLInteractiveAgent()]
         random.shuffle(agentList)
-        winners.append(randomGameLoop(agentList, humanInput=False))
+        winners.append(gameLoop(agentList, humanInput=False))
 
     print("Done.")
     c = Counter(winners)
