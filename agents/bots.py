@@ -1,57 +1,12 @@
+from agents.agent import BaseAgent
 import coup
 
 import random
 
-# Base Agent.
-# Custom AIs inherent from this and implement methods.
-class BaseAgent:
-    def __init__(self, **kwargs):
-        pass
-
-    def selectAction(self, playerView):
-        '''Select an action on your turn
-        playerView is a namedtuple with selfstate and opponents.
-        Selfstate contains your coins & cards.
-        Opponents is a list of your opponents (in their order relative to you)
-            with their number of coins and number of cards.
-
-        Return a tuple: (action, target), where action is a Action enum member
-        and target is None for a victimless action and the index of the target
-        in your playerView.opponents list otherwise.
-        '''
-        pass
-
-    def selectReaction(self, playerView, actionInfo):
-        '''Select whether to block an action (usually directed at you)
-        playerView is as described above.
-        actionInfo is a tuple: (Action, ActivePlayer),
-            where action is one of: Steal, Assassinate, Foreign_Aid
-
-        Return True to block the action, False to allow it to occur.
-        '''
-        pass
-
-    def selectExchangeCards(self, playerView, cards):
-        '''Select which cards to keep, of the options presented.
-        cards is a list of roles, from which you must discard two and keep the remainder.
-
-        Return an ordered list of n or more cards (extras will be discarded), where n
-        is the number of cards you have in your hand.
-        '''
-        pass
-
-    def selectKilledCard(self, playerView):
-        '''Select which one of your cards must be discarded.
-
-        Return the role of one card in your hand.
-        '''
-        pass
-
-
 class RandomAgent(BaseAgent):
     # Returns a random eligible action.
     def selectAction(self, playerView):
-        action_list = coup.find_eligible_actions(playerView.selfstate)
+        action_list = coup.findEligibleActions(playerView.selfstate)
         action = random.sample(action_list, 1)[0]
 
         if action in [coup.Action.ASSASSINATE, coup.Action.COUP]:
@@ -95,7 +50,7 @@ class RandomAgent(BaseAgent):
 
 class MrtBot(RandomAgent):
     def selectAction(self, playerView):
-        action_list = list(map(lambda x: x.name, coup.find_eligible_actions(playerView.selfstate)))
+        action_list = list(map(lambda x: x.name, coup.findEligibleActions(playerView.selfstate)))
         if "COUP" in action_list:
             # COUP SOMEONE
             for i, opp in enumerate(playerView.opponents):
@@ -205,7 +160,7 @@ class BayBot(BaseAgent):
     def selectAction(self, playerView):
 
         # return first legal action by preference
-        action_list = coup.find_eligible_actions(playerView.selfstate)
+        action_list = coup.findEligibleActions(playerView.selfstate)
         action_names = list(map(lambda x: x.name, action_list))
         action = [i for i in self.action_preferences if (i in action_names)][0]
         action = coup.Action[action]
@@ -260,7 +215,7 @@ class BayBot(BaseAgent):
 class SeanAgent(RandomAgent):
 
     def selectAction(self, playerView):
-        action_list = coup.find_eligible_actions(playerView.selfstate)
+        action_list = coup.findEligibleActions(playerView.selfstate)
 
         # This is in order of desirability
         # More effort here?

@@ -59,7 +59,7 @@ GameState = namedtuple('GameState', ['players', 'deck'])
 PlayerView = namedtuple('PlayerView', ['selfstate', 'opponents'])
 
 
-def find_eligible_actions(playerState):
+def findEligibleActions(playerState):
     if playerState.coins >= 10:
         return set([Action.COUP])
     try:
@@ -79,13 +79,52 @@ def getPlayerView(gameState, activePlayer):
                     gameState.players[activePlayer+1:] + gameState.players[:activePlayer])))
 
 
+def canAffordAction(playerState, action):
+    '''Returns true if a player can afford an action.
+    Additionally, returns false if a player has more than 10 coins
+        and the action is not coup.
+    '''
+    return playerState.coins >= action_expense[action] and \
+                action == Action.COUP if playerState.coins > 10 else True
+
+
+def removeCard(playerState, card, replacement=None):
+    ''' Remove a card from a players hand, and (possibly) replace it with a new one.
+    The player's new state is returned.
+    If the card is not in the player's hand, an arbitrary card from their hand will be taken.
+    If they are left with 0 cards, and no replacement, None will be returned.
+    '''
+    if card not in playerState.cards:
+        # You didn't follow the rules, so I get to take any card.
+        card = playerState.cards[-1]
+
+    cards = playerState.cards[:] # make copy to preserve immutability
+    cards.remove(card)
+    if replacement:
+        cards.append(replacement)
+    if len(cards) == 0:
+        return None
+    return playerState._replace(cards=cards)
+
+def getCardsFromDeck(gameState, nCards):
+    '''Basically, sample without replacement from the game deck.
+    Returns the cards, and the updated gameState.
+    '''
+    deck = random.sample(gameState.deck, len(gameState.deck))
+    cards = []
+    for _ in range(nCards):
+        cards.append(deck.pop())
+    return cards, gameState._replace(deck=deck)
+
 # Return the new gameState after a player takes an action
-def apply_action(gameState, activePlayer, action, targetPlayer=None):
+def applyAction(gameState, activePlayer, action, targetPlayer=None):
     # WHY DO I HAVE TO DO THIS?!?!
     action = Action[action.name]
 
     playerList = gameState.players[:]
     player = playerList[activePlayer]
+
+    assert canAffordAction(player, action)
 
     if action == Action.INCOME:
         player = player._replace(coins = player.coins + 1)
@@ -127,10 +166,10 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
     elif action == Action.EXCHANGE:
         # Select two cards from deck.
         # Offer agent these two + their current cards.
-        offers = random.sample(gameState.deck, 2) + player.cards
+        offers, gameState = getCardsFromDeck(gameState, 2)
+        offers += player.cards
         selected = player.agent.selectExchangeCards(getPlayerView(gameState, activePlayer), offers)
         selected = selected[:len(player.cards)]
-
         # Set hand to selected cards, and return remaining to deck.
         for card in selected:
             try:
@@ -146,65 +185,49 @@ def apply_action(gameState, activePlayer, action, targetPlayer=None):
                     # This shouldn't happen
                     raise
         playerList[activePlayer] = player._replace(cards=selected)
-        return gameState._replace(players=playerList, deck=deck + offers)
+        return gameState._replace(players=playerList, deck=gameState.deck + offers)
 
     elif action == Action.ASSASSINATE:
         target = playerList[targetPlayer]
         # Player must pay for assassination
-        player = player._replace(coins = player.coins - 3)
+        playerList[activePlayer] = player._replace(coins = player.coins - 3)
+
         # Target gets the opportunity to block:
         blockAttempt = target.agent.selectReaction(getPlayerView(gameState, targetPlayer),
                                     (Action.ASSASSINATE, (activePlayer - targetPlayer) % len(playerList)))
         if not blockAttempt:
-            # Assasination will go forward. Target now gets to select card.
-            killedCard = target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer))
-            # Check that a valid card was returned
-            assert killedCard in target.cards
-            newCards = list(set(target.cards) - set([killedCard]))
-
-            if len(newCards) != len(target.cards) - 1:
-                newCards = target.cards[:-1]
-
-            if len(newCards) == 0:
-                # target has been knocked out of game. Do not re-add them to gameState
-                playerList[activePlayer] = player
-                playerList.pop(targetPlayer)
+            # Target gets opportunity to select which card is killed.
+            target = removeCard(target,
+                                target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer)))
+            if target:
+                playerList[targetPlayer] = target
             else:
-                # target is still in game.
-                playerList[activePlayer] = player
-                playerList[targetPlayer] = target._replace(cards=newCards)
-        else:
-            # Assasination was blocked, just re-add players
-            playerList[activePlayer] = player
-            playerList[targetPlayer] = target
+                # Target was knocked out of game.
+                playerList.pop(targetPlayer)
         return gameState._replace(players=playerList)
 
     elif action == Action.COUP:
         target = playerList[targetPlayer]
         # Player must pay for assassination
         player = player._replace(coins = player.coins - 7)
-        killedCard = target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer))
-        assert killedCard in target.cards
-        newCards = list(set(target.cards) - set([killedCard]))
-
-        if len(newCards) != len(target.cards) - 1:
-            newCards = target.cards[:-1]
-
-        if len(newCards) == 0:
-            # target has been knocked out of game. Do not re-add them to gameState
-            playerList[activePlayer] = player
-            playerList.pop(targetPlayer)
+        playerList[activePlayer] = player
+        target = removeCard(target,
+                            target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer)))
+        if target:
+            playerList[targetPlayer] = target
         else:
-            # target is still in game.
-            playerList[activePlayer] = player
-            playerList[targetPlayer] = target._replace(cards=newCards)
+            playerList.pop(targetPlayer)
         return gameState._replace(players=playerList)
 
 
 # Set up an initial gameState for the list of agents.
 def dealGame(deck, agents):
     random.shuffle(deck)
-    return GameState(players=[PlayerState(coins=2, cards=deck[i*2:i*2+2], agent=a, name=f"{type(a)}-{i}") for i, a in enumerate(agents)],
+    return GameState(players=[PlayerState(coins=2,
+                                          cards=deck[i*2:i*2+2],
+                                          agent=a,
+                                          name="{name}-{i}".format(name=str(type(a)).split("'")[1].split(".")[-1], i=i))
+                                    for i, a in enumerate(agents)],
                     deck=deck[len(agents)+2:])
 
 
@@ -236,7 +259,7 @@ def randomGameLoop(agents, humanInput=False):
             target = None
         if humanInput:
             print(f"Action: {action} directed at target {target} by Player {gameState.players[i].name}")
-        gameState = apply_action(gameState, i, action, target)
+        gameState = applyAction(gameState, i, action, target)
         turns += 1
         if humanInput:
             x = input().strip()
@@ -250,7 +273,8 @@ def randomGameLoop(agents, humanInput=False):
 
 
 if __name__ == "__main__":
-    from agents import *
+    from agents.bots import *
+    from agents.cli import CLInteractiveAgent
     from statistics import mean
     from collections import Counter
 
