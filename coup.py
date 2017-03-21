@@ -129,7 +129,7 @@ def applyForeignAid(gameState, activePlayer):
     player = playerList[activePlayer]
     # All opponents get the opporunity to block
     blockAttempt = [opp.agent.selectReaction(getPlayerView(gameState, i),
-                                             (Action.FOREIGN_AID, (activePlayer - i) % len(playerList)))
+                                    (Action.FOREIGN_AID, (activePlayer - i - 1) % len(playerList)))
                         for i, opp in enumerate(playerList) if opp is not player]
     if not any(blockAttempt):
         player = player._replace(coins = player.coins + 2)
@@ -152,7 +152,7 @@ def applySteal(gameState, activePlayer, targetPlayer):
     target = playerList[targetPlayer]
     # Target gets the opportunity to block:
     blockAttempt = target.agent.selectReaction(getPlayerView(gameState, targetPlayer),
-                                    (Action.STEAL, (activePlayer - targetPlayer) % len(playerList)))
+                                    (Action.STEAL, (activePlayer - targetPlayer - 1) % len(playerList)))
     if not blockAttempt:
         targetCoins = max(target.coins - 2, 0) # target cannot have negative coins.
         delta = target.coins - targetCoins
@@ -172,7 +172,7 @@ def applyAssassinate(gameState, activePlayer, targetPlayer):
 
     # Target gets the opportunity to block:
     blockAttempt = target.agent.selectReaction(getPlayerView(gameState, targetPlayer),
-                                (Action.ASSASSINATE, (activePlayer - targetPlayer) % len(playerList)))
+                                (Action.ASSASSINATE, (activePlayer - targetPlayer - 1) % len(playerList)))
     if not blockAttempt:
         # Target gets opportunity to select which card is killed.
         target = removeCard(target,
