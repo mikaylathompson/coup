@@ -5,19 +5,46 @@ import random
 # Base Agent.
 # Custom AIs inherent from this and implement methods.
 class BaseAgent:
-    def __init__(self):
+    def __init__(self, **kwargs):
         pass
 
     def selectAction(self, playerView):
+        '''Select an action on your turn
+        playerView is a namedtuple with selfstate and opponents.
+        Selfstate contains your coins & cards.
+        Opponents is a list of your opponents (in their order relative to you)
+            with their number of coins and number of cards.
+
+        Return a tuple: (action, target), where action is a Action enum member
+        and target is None for a victimless action and the index of the target
+        in your playerView.opponents list otherwise.
+        '''
         pass
 
     def selectReaction(self, playerView, actionInfo):
+        '''Select whether to block an action (usually directed at you)
+        playerView is as described above.
+        actionInfo is a tuple: (Action, ActivePlayer),
+            where action is one of: Steal, Assassinate, Foreign_Aid
+
+        Return True to block the action, False to allow it to occur.
+        '''
         pass
 
     def selectExchangeCards(self, playerView, cards):
+        '''Select which cards to keep, of the options presented.
+        cards is a list of roles, from which you must discard two and keep the remainder.
+
+        Return an ordered list of n or more cards (extras will be discarded), where n
+        is the number of cards you have in your hand.
+        '''
         pass
 
     def selectKilledCard(self, playerView):
+        '''Select which one of your cards must be discarded.
+
+        Return the role of one card in your hand.
+        '''
         pass
 
 
@@ -29,7 +56,7 @@ class RandomAgent(BaseAgent):
 
         if action in [coup.Action.ASSASSINATE, coup.Action.COUP]:
             target = random.randint(0, (len(playerView.opponents)) - 1)
-        elif action == coup.Action.STEAL: 
+        elif action == coup.Action.STEAL:
             try:
                 target = random.choice([i for i, opp in enumerate(playerView.opponents) if opp.coins >= 2])
             except IndexError:
@@ -98,8 +125,8 @@ class MrtBot(RandomAgent):
                     return (coup.Action.ASSASSINATE, i)
             return (coup.Action.ASSASSINATE, 0)
 
-        if "DUKE_MONEY" in action_list:
-            return (coup.Action.DUKE_MONEY, None)
+        if "TAX" in action_list:
+            return (coup.Action.TAX, None)
 
         if "EXCHANGE" in action_list:
             return (coup.Action.EXCHANGE, None)
@@ -163,12 +190,12 @@ class BayBot(BaseAgent):
         "AMBASSADOR"
     ]
 
-    # ordered preference for actions 
+    # ordered preference for actions
     action_preferences = [
         "ASSASSINATE",
         "COUP",
-        "EXCHANGE", 
-        "DUKE_MONEY",
+        "EXCHANGE",
+        "TAX",
         "STEAL",
         "INCOME",
         "FOREIGN_AID"
@@ -197,9 +224,9 @@ class BayBot(BaseAgent):
         # default is to attack strongest player
         target = opps[0][0]
 
-        # TODO: unless stealing, in which case choose strongest player 
+        # TODO: unless stealing, in which case choose strongest player
         #       w/ at least 2 coins who has not blocked you before
-       
+
         return (action, target)
 
 
@@ -222,14 +249,14 @@ class BayBot(BaseAgent):
 
     def selectExchangeCards(self, playerView, cards):
         ordered_cards = sorted(cards, key=lambda x: self.card_preferences.index(x.name))
-        return ordered_cards[:len(playerView.selfstate.cards)]   
+        return ordered_cards[:len(playerView.selfstate.cards)]
 
     # Returns a random card from hand.
     def selectKilledCard(self, playerView):
         ordered_cards = sorted(playerView.selfstate.cards, key=lambda x: self.card_preferences.index(x.name))
-        return ordered_cards[-1]   
+        return ordered_cards[-1]
 
-      
+
 class SeanAgent(RandomAgent):
 
     def selectAction(self, playerView):
@@ -238,8 +265,8 @@ class SeanAgent(RandomAgent):
         # This is in order of desirability
         # More effort here?
         action = coup.Action.INCOME
-        if coup.Action.DUKE_MONEY in action_list:
-            action = coup.Action.DUKE_MONEY
+        if coup.Action.TAX in action_list:
+            action = coup.Action.TAX
         if coup.Action.STEAL in action_list:
             action = coup.Action.STEAL
         if coup.Action.ASSASSINATE in action_list:
@@ -264,8 +291,8 @@ class SeanAgent(RandomAgent):
                 target = random.choice([i for i, opp in enumerate(playerView.opponents) if opp.coins >= 2])
             except IndexError:
                 action = coup.Action.INCOME
-                if coup.Action.DUKE_MONEY in action_list:
-                    action = coup.Action.DUKE_MONEY
+                if coup.Action.TAX in action_list:
+                    action = coup.Action.TAX
                 target = None
         else:
             target = None
