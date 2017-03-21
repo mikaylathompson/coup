@@ -134,9 +134,9 @@ class CLInteractiveAgent:
         return True
 
     def selectExchangeCards(self, playerView, cards):
-        print("Select {n} of the following cards:".format(len(cards) -2))
-        print('\n'.join(zip(range(len(cards)), cards)))
-        selections = input("Index(es) of selection(s)? ").strip().split()
+        print("Select {n} of the following cards:".format(n=len(cards) -2))
+        print('\n'.join(map(lambda x: f"{x[0]} {x[1]}", zip(range(len(cards)), cards))))
+        selections = input("\nIndex(es) of selection(s)? ").strip().split()
         newCards = []
         for choice in selections:
             newCards.append(cards[int(choice)])
@@ -144,14 +144,16 @@ class CLInteractiveAgent:
 
     def selectKilledCard(self, playerView):
         print("Select which of these to kill:")
-        print('\n'.join(zip(range(len(playerView.selfstate.cards)), playerView.selfstate.cards)))
-        selection= int(input("Index of card to kill? ").strip())
+        print('\n'.join(map(lambda x: f"{x[0]} {x[1]}", zip(range(len(playerView.selfstate.cards)),
+                                                            playerView.selfstate.cards))))
+        selection= int(input("\nIndex of card to kill? ").strip())
         return playerView.selfstate.cards[selection]
 
     def turnSummary(self, playerView, summary):
         if summary.activePlayer == -1:
             activePlayer = playerView.selfstate
         else:
+            # There's an IndexError bug here verrrrryyyy occasionally, and I have no idea what it is.
             activePlayer = playerView.opponents[summary.activePlayer]
 
         if summary.action.name == 'INCOME':
@@ -208,6 +210,7 @@ class CLInteractiveAgent:
                         target = None
                 except IndexError:
                     target = None
+
             print(phrases['coup'].format(p=summary.activeName,t=summary.targetName))
             if target is None:
                 print(phrases['eliminated'].format(t=summary.targetName))
