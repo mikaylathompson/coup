@@ -70,6 +70,19 @@ def printView(playerView):
     printSelf(playerView.selfstate, width)
     print()
 
+phrases = dict(
+    income = "{p} took 1 coin as income and now has {n} coins.",
+    foreign_aid = "{p} took 2 coins as foreign aid and now has {n} coins.",
+    foreign_aid_blocked = "{p} tried to take foreign aid, but was blocked.",
+    tax = "{p} took 3 coins as tax and now has {n} coins.",
+    exchange = "{p} exchanged {n} cards.",
+    steal = "{p} stole from {n}.",
+    steal_blocked = "{p} tried to steal from {n}, but was blocked.",
+    assassinate = "{p} assassinated {t}.",
+    assassinate_blocked = "{p} tried to assassinate {t}, but was blocked.",
+    coup = "{p} staged a coup on {t}.",
+    eliminated = "{t} has been eliminated from the game."
+)
 
 class CLInteractiveAgent:
     def __init__(self, **kwargs):
@@ -125,75 +138,60 @@ class CLInteractiveAgent:
         '''
         return playerView.selfstate.cards[-1]
 
-    def turnSummary(self, playerView, actionInfo):
-        if actionInfo[1] == -1:
+    def turnSummary(self, playerView, summary):
+        if summary.activePlayer == -1:
             activePlayer = playerView.selfstate
         else:
-            activePlayer = playerView.opponents[actionInfo[1]]
+            activePlayer = playerView.opponents[summary.activePlayer]
 
-        if actionInfo[0].name == 'INCOME':
-            print("{p} took 1 coin as income and now has {n} coins.".format(
-                    p=activePlayer.name, n = activePlayer.coins))
-        elif actionInfo[0].name == 'FOREIGN_AID':
-            if actionInfo[2]:
-                print("{p} took 2 coins as foreign aid and now has {n} coins.".format(
-                    p=activePlayer.name, n=activePlayer.coins))
+        if summary.action.name == 'INCOME':
+            print(phrases['income'].format(p=summary.activeName, n=activePlayer.coins))
+        elif summary.action.name == 'FOREIGN_AID':
+            if summary.success:
+                print(phrases['foreign_aid'].format(p=summary.activeName,
+                                                    n=activePlayer.coins))
             else:
-                print("{p} tried to take foreign aid, but was blocked.".format(
-                    p=activePlayer.name))
-        elif actionInfo[0].name == 'TAX':
-            print("{p} took 3 coins as tax and now has {n} coins.".format(
-                p=activePlayer.name, n=activePlayer.coins))
-        elif actionInfo[0].name == 'EXCHANGE':
-            print("{p} exchanged {n} cards.".format(p=activePlayer.name, n=activePlayer.cards))
-        elif actionInfo[0].name == 'STEAL':
-            if actionInfo[2] == -1:
+                print(phrases['foreign_aid_blocked'].format(p=summary.activeName))
+        elif summary.action.name == 'TAX':
+            print(phrases['tax'].format(p=summary.activeName, n=activePlayer.coins))
+        elif summary.action.name == 'EXCHANGE':
+            print(phrases['exchange'].format(p=activePlayer.name, n=activePlayer.cards))
+        elif summary.action.name == 'STEAL':
+            if summary.target == -1:
                 target = playerView.selfstate
             else:
-                target = playerView.opponents[actionInfo[2]]
-            if actionInfo[3]:
-                print("{p} stole from {t} and now has {n} coins.".format(
-                    p=activePlayer.name, t=target.name, n=activePlayer.coins))
+                target = playerView.opponents[summary.target] 
+                if target.name != summary.targetName:
+                    target = None
+            # print message.
+            if summary.success:
+                print(phrases['steal'].format(
+                    p=summary.activeName, t=summary.targetName, n=activePlayer.coins))
             else:
-                print("{p} tried to steal from {t} and was blocked.".format(
-                    p=activePlayer.name, t=target.name))
-        elif actionInfo[0].name == 'ASSASSINATE':
-            if actionInfo[2] == -1:
+                print(phrases['steal_blocked'].format(
+                    p=summary.activeName, t=summary.targetName, n=activePlayer.coins))
+        elif summary.action.name == 'ASSASSINATE':
+            if summary.target == -1:
                 target = playerView.selfstate
-                targetName = 'you'
-            elif not(isinstance(actionInfo[2], int)):
-                target = None
-                targetName = actionInfo[2]
             else:
-                target = playerView.opponents[actionInfo[2]]
-                targetName = target.name
-            if actionInfo[3]:
-                if not target:
-                    print("{p} assassinated {t}, who is now eliminated.".format(
-                        p=activePlayer.name, t=targetName))
-                else:
-                    print("{p} assassinated {t}, but {t} is not yet eliminated.".format(
-                        p=activePlayer.name, t=targetName))
+                target = playerView.opponents[summary.target] 
+                if target.name != summary.targetName:
+                    target = None
+            if summary.success:
+                print(phrases['assassinate'].format(p=summary.activeName,t=summary.targetName))
             else:
-                print("{p} attempted to assassinate {t}, but was blocked.".format(
-                    p=activePlayer.name, t=targetName))
-        elif actionInfo[0].name == 'COUP':
-            if actionInfo[2] == -1:
+                print(phrases['assassinate_blocked'].format(p=summary.activeName,
+                                                            t=summary.targetName))
+            if target is None:
+                print(phrases['eliminated'].format(t=summary.targetName))
+        elif summary.action.name == 'COUP':
+            if summary.target == -1:
                 target = playerView.selfstate
-                targetName = 'you'
-            elif not(isinstance(actionInfo[2], int)):
-                target = None
-                targetName = actionInfo[2]
             else:
-                target = playerView.opponents[actionInfo[2]]
-                targetName = target.name
-            if not target:
-                print("{p} staged a coup on {t}, who is now eliminated.".format(
-                    p=activePlayer.name, t=targetName))
-            else:
-                print("{p} staged a coup on {t}, but {t} is not yet eliminated.".format(
-                    p=activePlayer.name, t=targetName))
-
-
-
+                target = playerView.opponents[summary.target] 
+                if target.name != summary.targetName:
+                    target = None
+            print(phrases['coup'].format(p=summary.activeName,t=summary.targetName))
+            if target is None:
+                print(phrases['eliminated'].format(t=summary.targetName))
 
