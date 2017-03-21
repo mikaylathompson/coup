@@ -70,6 +70,19 @@ def printView(playerView):
     printSelf(playerView.selfstate, width)
     print()
 
+phrases = dict(
+    income = "{p} took 1 coin as income and now has {n} coins.",
+    foreign_aid = "{p} took 2 coins as foreign aid and now has {n} coins.",
+    foreign_aid_blocked = "{p} tried to take foreign aid, but was blocked.",
+    tax = "{p} took 3 coins as tax and now has {n} coins.",
+    exchange = "{p} exchanged {n} cards.",
+    steal = "{p} stole from {t} and now had {n} coins.",
+    steal_blocked = "{p} tried to steal from {t}, but was blocked.",
+    assassinate = "{p} assassinated {t}.",
+    assassinate_blocked = "{p} tried to assassinate {t}, but was blocked.",
+    coup = "{p} staged a coup on {t}.",
+    eliminated = "{t} has been eliminated from the game."
+)
 
 class CLInteractiveAgent:
     def __init__(self, **kwargs):
@@ -107,21 +120,98 @@ class CLInteractiveAgent:
 
         Return True to block the action, False to allow it to occur.
         '''
-        return False
+        try:
+            activePlayer = playerView.opponents[actionInfo[1]]
+        except:
+            print(actionInfo[1])
+            print(playerView.opponents)
+            activePlayer = playerView.opponents[-1] # This is weird, and I can't figure out the math to make this happen.
+        print("{name} is trying to {action}.".format(name=activePlayer.name, action=actionInfo[0].name))
+        block = input("Block?")
+        if 'n' in block.lower():
+            return False
+        # Should verify that I have the right to do this.
+        return True
 
     def selectExchangeCards(self, playerView, cards):
-        '''Select which cards to keep, of the options presented.
-        cards is a list of roles, from which you must discard two and keep the remainder.
-
-        Return an ordered list of n or more cards (extras will be discarded), where n
-        is the number of cards you have in your hand.
-        '''
-        return cards[:2]
+        print("Select {n} of the following cards:".format(n=len(cards) -2))
+        print('\n'.join(map(lambda x: f"{x[0]} {x[1]}", zip(range(len(cards)), cards))))
+        selections = input("\nIndex(es) of selection(s)? ").strip().split()
+        newCards = []
+        for choice in selections:
+            newCards.append(cards[int(choice)])
+        return newCards
 
     def selectKilledCard(self, playerView):
-        '''Select which one of your cards must be discarded.
+        print("Select which of these to kill:")
+        print('\n'.join(map(lambda x: f"{x[0]} {x[1]}", zip(range(len(playerView.selfstate.cards)),
+                                                            playerView.selfstate.cards))))
+        selection= int(input("\nIndex of card to kill? ").strip())
+        return playerView.selfstate.cards[selection]
 
-        Return the role of one card in your hand.
-        '''
-        return playerView.selfstate.cards[-1]
+    def turnSummary(self, playerView, summary):
+        if summary.activePlayer == -1:
+            activePlayer = playerView.selfstate
+        else:
+            # There's an IndexError bug here verrrrryyyy occasionally, and I have no idea what it is.
+            activePlayer = playerView.opponents[summary.activePlayer]
+
+        if summary.action.name == 'INCOME':
+            print(phrases['income'].format(p=summary.activeName, n=activePlayer.coins))
+        elif summary.action.name == 'FOREIGN_AID':
+            if summary.success:
+                print(phrases['foreign_aid'].format(p=summary.activeName,
+                                                    n=activePlayer.coins))
+            else:
+                print(phrases['foreign_aid_blocked'].format(p=summary.activeName))
+        elif summary.action.name == 'TAX':
+            print(phrases['tax'].format(p=summary.activeName, n=activePlayer.coins))
+        elif summary.action.name == 'EXCHANGE':
+            print(phrases['exchange'].format(p=activePlayer.name, n=activePlayer.cards))
+        elif summary.action.name == 'STEAL':
+            if summary.targetPlayer == -1:
+                target = playerView.selfstate
+            else:
+                target = playerView.opponents[summary.targetPlayer]
+                if target.name != summary.targetName:
+                    target = None
+            # print message.
+            if summary.success:
+                print(phrases['steal'].format(
+                    p=summary.activeName, t=summary.targetName, n=activePlayer.coins))
+            else:
+                print(phrases['steal_blocked'].format(
+                    p=summary.activeName, t=summary.targetName, n=activePlayer.coins))
+        elif summary.action.name == 'ASSASSINATE':
+            if summary.targetPlayer == -1:
+                target = playerView.selfstate
+            else:
+                try:
+                    target = playerView.opponents[summary.targetPlayer] 
+                    if target.name != summary.targetName:
+                        target = None
+                except IndexError:
+                    target = None
+
+            if summary.success:
+                print(phrases['assassinate'].format(p=summary.activeName,t=summary.targetName))
+            else:
+                print(phrases['assassinate_blocked'].format(p=summary.activeName,
+                                                            t=summary.targetName))
+            if target is None:
+                print(phrases['eliminated'].format(t=summary.targetName))
+        elif summary.action.name == 'COUP':
+            if summary.targetPlayer == -1:
+                target = playerView.selfstate
+            else:
+                try:
+                    target = playerView.opponents[summary.targetPlayer] 
+                    if target.name != summary.targetName:
+                        target = None
+                except IndexError:
+                    target = None
+
+            print(phrases['coup'].format(p=summary.activeName,t=summary.targetName))
+            if target is None:
+                print(phrases['eliminated'].format(t=summary.targetName))
 
