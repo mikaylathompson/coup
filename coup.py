@@ -59,9 +59,9 @@ GameState = namedtuple('GameState', ['players', 'deck'])
 PlayerView = namedtuple('PlayerView', ['selfstate', 'opponents'])
 
 Summary = namedtuple('Summary', ['action', 'activePlayer', 'activeName'])
-SummaryWTarget = namedtuple('Summary', Summary._fields + ['targetPlayer', 'targetName'])
-SummaryWSuccess = namedtuple('Summary', Summary._fields + ['success'])
-SummaryWTargetSuccess = namedtuple('Summary', SummaryWTarget._fields + ['success'])
+SummaryWTarget = namedtuple('Summary', Summary._fields + ('targetPlayer', 'targetName'))
+SummaryWSuccess = namedtuple('Summary', Summary._fields + ('success',))
+SummaryWTargetSuccess = namedtuple('Summary', SummaryWTarget._fields + ('success',))
 
 def findEligibleActions(playerState):
     if playerState.coins >= 10:
@@ -167,6 +167,7 @@ def applyAssassinate(gameState, activePlayer, targetPlayer):
     playerList = gameState.players[:]
     player = playerList[activePlayer]
     target = playerList[targetPlayer]
+    targetName = target.name
     # Player must pay for assassination
     playerList[activePlayer] = player._replace(coins = player.coins - 3)
 
@@ -179,10 +180,9 @@ def applyAssassinate(gameState, activePlayer, targetPlayer):
                             target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer)))
         if target:
             playerList[targetPlayer] = target
-            targetName = target.name
         else:
             # Target was knocked out of game.
-            targetName = playerList.pop(targetPlayer).name
+            playerList.pop(targetPlayer)
     return gameState._replace(players=playerList),\
             SummaryWTargetSuccess(Action.ASSASSINATE,
                     activePlayer, player.name,
@@ -281,12 +281,14 @@ def broadcastRelativeTurnSummaries(turnSummary, gameState):
         if turnSummary.activePlayer == i:
             rt = turnSummary._replace(activePlayer=-1)
         else:
-            rt = turnSummary._replace(activePlayer=(activePlayer - i - 1) % len(gameState.players))
-        if 'targetPlayer' in turnSummary:
-            if targetPlayer == i:
+            rt = turnSummary._replace(activePlayer=
+                    (turnSummary.activePlayer - i - 1) % len(gameState.players))
+        if 'targetPlayer' in rt._fields:
+            if rt.targetPlayer == i:
                 rt = rt._replace(targetPlayer=-1)
-            rt = rt._replace(targetPlayer=(targetPlayer - i - 1) % len(gameState.players))
-        player.agent.turnSummary(getPlayerView(gameState, i), relative)
+            else:
+                rt = rt._replace(targetPlayer=(rt.targetPlayer - i - 1) % len(gameState.players))
+        player.agent.turnSummary(getPlayerView(gameState, i), rt)
 
 def gameLoop(agents, humanInput=False):
     baseDeck = [Role.DUKE, Role.ASSASSIN, Role.CONTESSA, Role.AMBASSADOR, Role.CAPTAIN] * 3

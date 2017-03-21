@@ -76,7 +76,7 @@ phrases = dict(
     foreign_aid_blocked = "{p} tried to take foreign aid, but was blocked.",
     tax = "{p} took 3 coins as tax and now has {n} coins.",
     exchange = "{p} exchanged {n} cards.",
-    steal = "{p} stole from {n}.",
+    steal = "{p} stole from {t} and now had {n} coins.",
     steal_blocked = "{p} tried to steal from {n}, but was blocked.",
     assassinate = "{p} assassinated {t}.",
     assassinate_blocked = "{p} tried to assassinate {t}, but was blocked.",
@@ -157,10 +157,10 @@ class CLInteractiveAgent:
         elif summary.action.name == 'EXCHANGE':
             print(phrases['exchange'].format(p=activePlayer.name, n=activePlayer.cards))
         elif summary.action.name == 'STEAL':
-            if summary.target == -1:
+            if summary.targetPlayer == -1:
                 target = playerView.selfstate
             else:
-                target = playerView.opponents[summary.target] 
+                target = playerView.opponents[summary.targetPlayer]
                 if target.name != summary.targetName:
                     target = None
             # print message.
@@ -171,12 +171,16 @@ class CLInteractiveAgent:
                 print(phrases['steal_blocked'].format(
                     p=summary.activeName, t=summary.targetName, n=activePlayer.coins))
         elif summary.action.name == 'ASSASSINATE':
-            if summary.target == -1:
+            if summary.targetPlayer == -1:
                 target = playerView.selfstate
             else:
-                target = playerView.opponents[summary.target] 
-                if target.name != summary.targetName:
+                try:
+                    target = playerView.opponents[summary.targetPlayer] 
+                    if target.name != summary.targetName:
+                        target = None
+                except IndexError:
                     target = None
+
             if summary.success:
                 print(phrases['assassinate'].format(p=summary.activeName,t=summary.targetName))
             else:
@@ -185,11 +189,14 @@ class CLInteractiveAgent:
             if target is None:
                 print(phrases['eliminated'].format(t=summary.targetName))
         elif summary.action.name == 'COUP':
-            if summary.target == -1:
+            if summary.targetPlayer == -1:
                 target = playerView.selfstate
             else:
-                target = playerView.opponents[summary.target] 
-                if target.name != summary.targetName:
+                try:
+                    target = playerView.opponents[summary.targetPlayer] 
+                    if target.name != summary.targetName:
+                        target = None
+                except IndexError:
                     target = None
             print(phrases['coup'].format(p=summary.activeName,t=summary.targetName))
             if target is None:
