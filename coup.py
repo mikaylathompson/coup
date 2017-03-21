@@ -58,6 +58,10 @@ GameState = namedtuple('GameState', ['players', 'deck'])
 # Oppenent is a list of PlayerStates of the other players, but cards is an int, not a list.
 PlayerView = namedtuple('PlayerView', ['selfstate', 'opponents'])
 
+Summary = namedtuple('Summary', ['action', 'activePlayer', 'activeName'])
+SummaryWTarget = namedtuple('Summary', Summary._fields + ['targetPlayer', 'targetName'])
+SummaryWSuccess = namedtuple('Summary', Summary._fields + ['success'])
+SummaryWTargetSuccess = namedtuple('Summary', SummaryWTarget._fields + ['success'])
 
 def findEligibleActions(playerState):
     if playerState.coins >= 10:
@@ -117,7 +121,8 @@ def applyIncome(gameState, activePlayer):
     playerList = gameState.players[:]
     player = playerList[activePlayer]
     playerList[activePlayer] = player._replace(coins = player.coins + 1)
-    return gameState._replace(players=playerList), (Action.INCOME, activePlayer)
+    return gameState._replace(players=playerList),\
+            Summary(Action.INCOME, activePlayer, player.name)
 
 def applyForeignAid(gameState, activePlayer):
     playerList = gameState.players[:]
@@ -130,13 +135,16 @@ def applyForeignAid(gameState, activePlayer):
         player = player._replace(coins = player.coins + 2)
 
     playerList[activePlayer] = player
-    return gameState._replace(players=playerList), (Action.FOREIGN_AID, activePlayer, bool(not any(blockAttempt)))
+    return gameState._replace(players=playerList),\
+            SummaryWSuccess(Action.FOREIGN_AID, activePlayer, player.name,
+                    not any(blockAttempt))
 
 def applyTax(gameState, activePlayer):
     playerList = gameState.players[:]
     player = playerList[activePlayer]
     playerList[activePlayer] = player._replace(coins = player.coins + 3)
-    return gameState._replace(players=playerList), (Action.TAX, activePlayer)
+    return gameState._replace(players=playerList),\
+            Summary(Action.TAX, activePlayer, player.name)
 
 def applySteal(gameState, activePlayer, targetPlayer):
     playerList = gameState.players[:]
@@ -150,7 +158,10 @@ def applySteal(gameState, activePlayer, targetPlayer):
         delta = target.coins - targetCoins
         playerList[activePlayer] = player._replace(coins = player.coins + delta)
         playerList[targetPlayer] = target._replace(coins = targetCoins)
-    return gameState._replace(players=playerList), (Action.STEAL, activePlayer, targetPlayer, bool(not blockAttempt))
+    return gameState._replace(players=playerList),\
+            SummaryWTargetSuccess(Action.STEAL, activePlayer, player.name,
+                    targetPlayer, target.name,
+                    not blockAttempt)
 
 def applyAssassinate(gameState, activePlayer, targetPlayer):
     playerList = gameState.players[:]
@@ -168,10 +179,15 @@ def applyAssassinate(gameState, activePlayer, targetPlayer):
                             target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer)))
         if target:
             playerList[targetPlayer] = target
+            targetName = target.name
         else:
             # Target was knocked out of game.
-            playerList.pop(targetPlayer)
-    return gameState._replace(players=playerList), (Action.ASSASSINATE, activePlayer, targetPlayer, bool(not blockAttempt))
+            targetName = playerList.pop(targetPlayer).name
+    return gameState._replace(players=playerList),\
+            SummaryWTargetSuccess(Action.ASSASSINATE,
+                    activePlayer, player.name,
+                    targetPlayer, targetName,
+                    not blockAttempt)
 
 def applyCoup(gameState, activePlayer, targetPlayer):
     playerList = gameState.players[:]
@@ -183,9 +199,12 @@ def applyCoup(gameState, activePlayer, targetPlayer):
                         target.agent.selectKilledCard(getPlayerView(gameState, targetPlayer)))
     if target:
         playerList[targetPlayer] = target
+        targetName = target.name
     else:
-        playerList.pop(targetPlayer)
-    return gameState._replace(players=playerList), (Action.COUP, activePlayer, targetPlayer)
+        targetName = playerList.pop(targetPlayer).name
+    return gameState._replace(players=playerList),\
+            SummaryWTarget(Action.COUP, activePlayer, player.name,
+                    targetPlayer, targetName)
 
 def applyExchange(gameState, activePlayer):
     # Select two cards from deck.
@@ -208,7 +227,8 @@ def applyExchange(gameState, activePlayer):
             selected[i] = offers.pop()
 
     playerList[activePlayer] = player._replace(cards=selected)
-    return gameState._replace(players=playerList, deck=gameState.deck + offers), (Action.EXCHANGE, activePlayer)
+    return gameState._replace(players=playerList, deck=gameState.deck + offers),\
+            Summary(Action.EXCHANGE, activePlayer, player.name)
 
 # Return the new gameState after a player takes an action
 def applyAction(gameState, activePlayer, action, targetPlayer=None):
