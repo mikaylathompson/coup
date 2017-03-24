@@ -87,7 +87,8 @@ def canAffordAction(playerState, action):
         and the action is not coup.
     '''
     return playerState.coins >= action_expense[action] and \
-                action == Action.COUP if playerState.coins > 10 else True
+                (action == Action.COUP if playerState.coins >= 10 else True)
+                # Wooo! Unit tests caught their first bug!!
 
 def removeCard(playerState, card, replacement=None):
     ''' Remove a card from a players hand, and (possibly) replace it with a new one.
