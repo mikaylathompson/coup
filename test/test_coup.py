@@ -1,8 +1,7 @@
 import pytest
 
-# import ..coup
-from ..coup import Role, Action, Reaction
-from .. import coup
+from coup import coup
+from coup.coup import Role, Action, Reaction
 
 def test_eligible_duke_actions():
     player = coup.PlayerState(cards=[Role.DUKE], coins=0, agent=None, name=None)
@@ -142,7 +141,7 @@ def test_remove_card_with_replacement():
 
 
 def test_remove_missing_card():
-    # this is the edge case of incorrect input, where the function can remove either card
+    # This is the edge case of incorrect input, where the function can remove either card.
     player = coup.PlayerState(cards=[Role.CAPTAIN, Role.CONTESSA], coins=0, agent=None, name=None)
     options = [player._replace(cards=[Role.CAPTAIN]), player._replace(cards=[Role.CONTESSA])]
     assert coup.removeCard(player, Role.ASSASSIN) in options
@@ -150,6 +149,33 @@ def test_remove_missing_card():
     player = coup.PlayerState(cards=[Role.DUKE], coins=0, agent=None, name=None)
     assert coup.removeCard(player, Role.AMBASSADOR) == None
 
+
+
+###  TEST APPLYING EACH ACTION ###
+
+# This needs a super easy MockAgent that turns down all Reactions/etc.
+from coup.agents.agent import BaseAgent
+
+class MockAgent(BaseAgent):
+    def selectReaction(self, playerView, actionInfo):
+        return False
+
+    def selectKilledCard(self, playerView):
+        return self.playerView.cards[-1]
+
+    def selectExchangeCards(self, playerView, cards):
+        return cards[:-2]
+
+game = coup.GameState(players = [
+    coup.PlayerState(cards=[Role.CAPTAIN], coins=0, agent=MockAgent(), name='0th'),
+    coup.PlayerState(cards=[Role.ASSASSIN, Role.CAPTAIN], coins=9, agent=MockAgent(), name='1st'),
+    coup.PlayerState(cards=[Role.DUKE, Role.AMBASSADOR], coins=5, agent=MockAgent(), name='2nd')
+    ], deck = [Role.DUKE, Role.CONTESSA])
+
+def test_apply_income():
+    new0th = game.players[0]._replace(coins=2)
+
+    assert coup.applyIncome(game, 0).players[0] == new0th
 
 
 
