@@ -161,7 +161,7 @@ class MockAgent(BaseAgent):
         return False
 
     def selectKilledCard(self, playerView):
-        return self.playerView.cards[-1]
+        return playerView.selfstate.cards[-1]
 
     def selectExchangeCards(self, playerView, cards):
         return cards[:-2]
@@ -173,16 +173,89 @@ game = coup.GameState(players = [
     ], deck = [Role.DUKE, Role.CONTESSA])
 
 def test_apply_income():
+    new0th = game.players[0]._replace(coins=1)
+    summary = coup.Summary(Action.INCOME, 0, '0th')
+
+    applied = coup.applyIncome(game, 0)
+    assert applied[0].players[0] == new0th
+    assert applied[1] == summary
+    
+    applied = coup.applyAction(game, 0, Action.INCOME)
+    assert applied[0].players[0] == new0th
+    assert applied[1] == summary
+
+
+def test_apply_foreign_aid():
     new0th = game.players[0]._replace(coins=2)
+    summary = coup.SummaryWSuccess(Action.FOREIGN_AID, 0, '0th', success=True)
 
-    assert coup.applyIncome(game, 0).players[0] == new0th
+    applied = coup.applyForeignAid(game, 0)
+    # Can I verify that the selectReaction method was called on the agents?
+    assert applied[0].players[0] == new0th
+    assert applied[1] == summary
+
+    applied = coup.applyAction(game, 0, Action.FOREIGN_AID)
+    assert applied[0].players[0] == new0th
+    assert applied[1] == summary
 
 
+def test_apply_tax():
+    new2nd = game.players[2]._replace(coins=8)
+    summary = coup.Summary(Action.TAX, 2, '2nd')
+    
+    applied = coup.applyTax(game, 2)
+    assert applied[0].players[2] == new2nd
+    assert applied[1] == summary
+
+    applied = coup.applyAction(game, 2, Action.TAX)
+    assert applied[0].players[2] == new2nd
+    assert applied[1] == summary
 
 
+def test_apply_steal():
+    new0th = game.players[0]._replace(coins=2)
+    new2nd = game.players[2]._replace(coins=3)
+    summary = coup.SummaryWTargetSuccess(Action.STEAL, 0, '0th', 2, '2nd', True)
+
+    applied = coup.applySteal(game, 0, 2)
+    assert applied[0].players[0] == new0th
+    assert applied[0].players[2] == new2nd
+    assert applied[1] == summary
+
+    applied = coup.applyAction(game, 0, Action.STEAL, 2)
+    assert applied[0].players[0] == new0th
+    assert applied[0].players[2] == new2nd
+    assert applied[1] == summary
 
 
+def test_apply_assassinate():
+    new1st = game.players[1]._replace(coins=6)
+    new2nd = game.players[2]._replace(cards=[Role.DUKE])
+    summary = coup.SummaryWTargetSuccess(Action.ASSASSINATE, 1, '1st', 2, '2nd', True)
+
+    applied = coup.applyAssassinate(game, 1, 2)
+    assert applied[0].players[1] == new1st
+    assert applied[0].players[2] == new2nd
+    assert applied[1] == summary
+
+    applied = coup.applyAction(game, 1, Action.ASSASSINATE, 2)
+    assert applied[0].players[1] == new1st
+    assert applied[0].players[2] == new2nd
+    assert applied[1] == summary
 
 
+def test_apply_coup():
+    new1st = game.players[1]._replace(coins=2)
+    new2nd = game.players[2]._replace(cards=[Role.DUKE])
+    summary = coup.SummaryWTarget(Action.COUP, 1, '1st', 2, '2nd')
 
+    applied = coup.applyCoup(game, 1, 2)
+    assert applied[0].players[1] == new1st
+    assert applied[0].players[2] == new2nd
+    assert applied[1] == summary
+
+    applied = coup.applyAction(game, 1, Action.COUP, 2)
+    assert applied[0].players[1] == new1st
+    assert applied[0].players[2] == new2nd
+    assert applied[1] == summary
 
