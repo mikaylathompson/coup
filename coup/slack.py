@@ -6,6 +6,8 @@ import sys
 import os
 from functools import partial
 from collections import namedtuple
+from datetime import datetime
+import time
 
 from slacker import Slacker
 
@@ -22,28 +24,45 @@ def postToUser(slack, username, message):
     print(f"@{username}: {message}")
     slack.chat.post_message(f"@{username}", message, as_user=True, link_names=True)
 
+def gen_userlist(slack):
+    return slack.users.list().body['members']
 
-def listener(mdata):
-    # determine if this is a relevant message.
-    # if so, determine who it is for.
-    player = mdata.sender
-    if player in listeners:
-        listeners[player](mdata.message)
-    pass
+def to_user_id(userlist, user):
+    match = [x for x in userlist if x['name'] == user]
+    return match[0]['id']
 
+def listen(slack, user, prompt=None):
+    ts = datetime.now().timestamp()
+    if prompt:
+        postToUser(slack, user, prompt)
+    user_id = slack.to_user_id(user)
+    new_messages = None
+    while not new_messages:
+        time.sleep(0.5)
+        new_messages = slack.channels.history(channel=slack.coup_channel,
+                                              oldest=ts,
+                                              inclusive=True).body['messages']
+        print(new_messages)
+        new_messages = [m['text'] for m in new_messages if m['user'] == user_id]
+    return new_messages
+
+def get_channel_id(slack, channelName):
+    channels = slack.channels.list().body
+    match = [x for x in slack.channels.list().body['channels'] if x['name'] == 'coup']
+    return match[0]['id']
 
 def setup(slack):
-    # setup the agents/players
+    # rtm = slack.rtm.start(simple_latest=True, no_unreads=True)
+    slack.coup_channel = get_channel_id(slack, 'coup')
+    slack.to_user_id = partial(to_user_id, gen_userlist(slack))
     players = ['mikayla']
     agents = []
     for player in players:
         # Give each agent a partial for a direct-post function
         # and a listenerRegistration function
-        def registerListener(listenerFunction):
-            listeners[player] = listenerFunction
 
         agents.append(SlackAgent(post=partial(postToUser, slack, player),
-                                listenerRegistration=registerListener,
+                                listen=partial(listen, slack, player),
                                 name=player))
     # deal the game
     pass
@@ -79,7 +98,8 @@ def gameLoop():
 def main():
     slack = Slacker(os.environ['SLACK_API_TOKEN'])
     setup(slack)
-    listener(test_message)
+    # print(listen(slack, 'mikayla'))
+    # listener(test_message)
     # postToChannel(slack, 'CoupBot is booting up!')
     pass
 
