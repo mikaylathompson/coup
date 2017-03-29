@@ -88,28 +88,19 @@ phrases = dict(
 
 class SlackAgent:
     def __init__(self, post,
-                       listenerRegistration,
+                       listen,
                        name,
                        **kwargs):
         self.post = post
         self.post(f"Welcome to the game, {name}!")
-
-        self.listenerRegistration = listenerRegistration
-        listenerRegistration(partial(self.echo))
-
-    def echo(self, message):
-        self.post("Heard you loud and clear.")
-        self.post(message)
-
+        self.listen = listen
+        self.listen("This is a test, mikayla.")
 
 
     def selectAction(self, playerView):
         printView(playerView)
         self.post(str(playerView))
-        self.post("Action?")
-
-        # self.listenerRegistration(
-
+        self.listen(prompt="Action?")
 
         try:
             action = coup.Action[input('Action? ').upper()]
