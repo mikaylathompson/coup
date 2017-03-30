@@ -37,13 +37,16 @@ def listen(slack, user, prompt=None):
         postToUser(slack, user, prompt)
     user_id = slack.to_user_id(user)
     new_messages = None
-    while not new_messages:
-        time.sleep(0.5)
+    wait_time = 1 #second
+    while not new_messages and wait_time <= (60*60*2):
+        time.sleep(wait_time)
+        wait_time *= 2
+
         new_messages = slack.channels.history(channel=slack.coup_channel,
                                               oldest=ts,
                                               inclusive=True).body['messages']
-        print(new_messages)
         new_messages = [m['text'] for m in new_messages if m['user'] == user_id]
+
     return new_messages
 
 def get_channel_id(slack, channelName):
